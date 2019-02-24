@@ -39,7 +39,6 @@ val_loader = torch.utils.data.DataLoader(
         batch_size=batch_size, shuffle=True,
         num_workers=workers, pin_memory=True)
 
-
 total_ingredients = 30167 # Found by loading vocab.bin
 
 for i, (input, target) in enumerate(train_loader):
