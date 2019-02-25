@@ -60,7 +60,7 @@ class ImagerLoader(data.Dataset):
         else:
             raise 'Partition name not well defined'
 
-        target = match and 1 or -1
+        target = 1 #match and 1 or -1
 
         with self.env.begin(write=False) as txn:
             serialized_sample = txn.get(self.ids[index].encode())
@@ -86,9 +86,9 @@ class ImagerLoader(data.Dataset):
                 rndindex = np.random.choice(all_idx)  # pick a random index
 
             with self.env.begin(write=False) as txn:
-                serialized_sample = txn.get(self.ids[rndindex])
+                serialized_sample = txn.get(self.ids[rndindex].encode())
 
-            rndsample = pickle.loads(serialized_sample)
+            rndsample = pickle.loads(serialized_sample, encoding='latin1')
             rndimgs = rndsample['imgs']
 
             if self.partition == 'train':  # if training we pick a random image

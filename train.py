@@ -41,6 +41,8 @@ val_loader = torch.utils.data.DataLoader(
 
 total_ingredients = 30167 # Found by loading vocab.bin
 
+num_epochs = len(train_loader)
+
 for i, (input, target) in enumerate(train_loader):
     start = time.time()
     # input has 5 components
@@ -56,7 +58,7 @@ for i, (input, target) in enumerate(train_loader):
     num_ingredients = int(input[4].data[0]) # torch.Size([1]) (number of ingredients?)
     ingredient_idx = input[3] # torch.Size([1, 20]) (ingredient id?)
 
-    # Create one-hot vectors
+    # Create one-hot vectors (multilabel binarization - ingredients present will have 1 at their indices)
     labels = torch.zeros((current_batch_size, total_ingredients))
     for batch in range(current_batch_size):
         for j in range(num_ingredients):
@@ -64,6 +66,6 @@ for i, (input, target) in enumerate(train_loader):
 
     # print(img_tensor.size(), labels.size()) # torch.Size([batch_size, 3, 224, 224]) torch.Size([batch_size, 30167])
     time_taken = time.time() - start
-    print(f"Epoch {i}, Time taken: {time_taken}s")
+    print(f"Epoch {i} / {num_epochs}, Time taken: {time_taken}s")
 
 print("Done")
