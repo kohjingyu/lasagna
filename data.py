@@ -1,82 +1,24 @@
-import torch
-from torchvision import transforms
-from torch.utils.data.dataset import Dataset
-from PIL import Image
-
-import os
-
 import numpy as np
-import json
+import torch
 
-class IngredientDataset(Dataset):
-    def __init__(self, data_path, ingredients_path, data_root):
-        """
-        Args:
-            data_path (string): path to .npy file of food data
-            ingredients_path (string): path to .npy file of ingredient data
-        """
+def get_tensor_from_data(input, target, dev_mode=False):
+    if dev_mode:
+        input_arr = np.array([input[i] for i in range(input.shape[0])]) # (16, 3, 224, 224)
+        target_arr = np.array([target[i] for i in range(target.shape[0])]) # (16, 30167)
+        img_tensor = torch.from_numpy(input_arr) # torch.Size([1, 3, 224, 224])
+        labels = torch.from_numpy(target_arr)
+    else:
+        img_tensor = input[0] # torch.Size([1, 3, 224, 224])
+        num_ingredients = input[4] # torch.Size([1]) (number of ingredients?)
+        ingredient_idx = input[3] # torch.Size([1, 20]) (ingredient id?)
 
-        self.data_root = data_root
+        current_batch_size = int(img_tensor.size()[0])
 
-        # Transforms
-        self.to_tensor = transforms.ToTensor()
+        # Create one-hot vectors (multilabel binarization - ingredients present will have 1 at their indices)
+        labels = torch.zeros((current_batch_size, total_ingredients))
 
-        self.data = np.load(data_path)
-        self.ingredients_info = np.load(ingredients_path).item()
-        self.num_ingredients = len(self.ingredients_info)
+        for batch in range(current_batch_size):
+            for j in range(int(num_ingredients[batch])):
+                labels[batch, int(ingredient_idx[batch, j])] = 1
 
-        self.image_arr = []
-        self.label_arr = []
-
-        # Convert to one-hot vectors
-        for d in self.data:
-            filepath = self.get_file_path(d["id"])
-
-            if os.path.isfile(filepath):
-                print(filepath, "exists")
-                self.image_arr.append(d["id"])
-
-                result = np.zeros((self.num_ingredients))
-                ingredients = d["ingredients"]
-                
-                for i in ingredients:
-                    result[i] = 1
-                self.label_arr.append(result)
-            else:
-                print(filepath, "doesn't exist")
-
-        self.data_len = len(self.image_arr)
-
-    def get_file_path(self, image_id):
-        return self.data_root + "/".join(list(image_id[:4])) + "/" + image_id + ".jpg"
-
-    def __getitem__(self, index):
-        # Get image name 
-        filename = self.image_arr[index]
-        # Convert to how our directory is organized
-        filename = self.get_file_path(filename)
-        print(filename)
-
-        # Open image
-        img = Image.open(filename)
-
-        # TODO: Perform image augmentations here
-        # We may want to crop the image to a fixed size or something
-
-        # Transform image to tensor
-        img_as_tensor = self.to_tensor(img)
-
-        # Get label
-        label = self.label_arr[index]
-
-        return (img, label)
-
-    def __len__(self):
-        return self.data_len
-
-
-if __name__ == "__main__":
-    custom_loader = IngredientDataset('smalldata/ingredients_vectorized.npy', 'smalldata/ingredients_mapping.npy', "smalldata/train/")
-
-    for i, (images, labels) in enumerate(custom_loader):
-        pass
+    return img_tensor, labels

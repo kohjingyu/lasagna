@@ -8,7 +8,6 @@ import numpy as np
 import lmdb
 import torch
 
-
 def default_loader(path):
     try:
         im = Image.open(path).convert('RGB')
@@ -16,6 +15,7 @@ def default_loader(path):
     except:
         print(..., file=sys.stderr)
         return Image.new('RGB', (224, 224), 'white')
+
 
 
 class ImagerLoader(data.Dataset):
@@ -142,6 +142,95 @@ class ImagerLoader(data.Dataset):
                 return [img, instrs, itr_ln, ingrs, igr_ln], [target, img_class, rec_class, img_id, rec_id]
             else:
                 return [img, instrs, itr_ln, ingrs, igr_ln], [target, img_id, rec_id]
+
+    def __len__(self):
+        return len(self.ids)
+
+
+
+class PreviewLoader(data.Dataset):
+    def __init__(self, img_path, transform=None, target_transform=None,
+                 loader=default_loader, square=False, data_path=None, partition=None, sem_reg=None):
+
+        if data_path == None:
+            raise Exception('No data path specified.')
+
+        if partition is None:
+            raise Exception('Unknown partition type %s.' % partition)
+        else:
+            self.partition = partition
+
+        self.env = lmdb.open(os.path.join(data_path, partition + '_lmdb'), max_readers=1, readonly=True, lock=False,
+                             readahead=False, meminit=False)
+
+        with open(os.path.join(data_path, partition + '_keys.pkl'), 'rb') as f:
+            self.ids = pickle.load(f, encoding='latin1')
+
+        self.square = square
+        self.imgPath = img_path
+        self.mismtch = 0.8
+        self.maxInst = 20
+
+        if sem_reg is not None:
+            self.semantic_reg = sem_reg
+        else:
+            self.semantic_reg = False
+
+        self.transform = transform
+        self.target_transform = target_transform
+        self.loader = loader
+
+    def __getitem__(self, index):
+        recipId = self.ids[index]
+        target = 1 
+
+        with self.env.begin(write=False) as txn:
+            serialized_sample = txn.get(self.ids[index].encode())
+        sample = pickle.loads(serialized_sample, encoding='latin1')
+        imgs = sample['imgs']
+        num_images = len(imgs)
+
+        # image
+        # We do only use the first five images per recipe during training
+        imgIdx = np.random.choice(range(min(5, len(imgs))))
+        loader_path = [imgs[imgIdx]['id'][i] for i in range(4)]
+        loader_path = os.path.join(*loader_path)
+        path = os.path.join(self.imgPath, self.partition, loader_path, imgs[imgIdx]['id'])
+
+            # instructions
+        instrs = sample['intrs']
+        itr_ln = len(instrs)
+        t_inst = np.zeros((self.maxInst, np.shape(instrs)[1]), dtype=np.float32)
+        t_inst[:itr_ln][:] = instrs
+        instrs = torch.FloatTensor(t_inst)
+
+        # ingredients
+        ingrs = sample['ingrs'].astype(int)
+        ingrs = torch.LongTensor(ingrs)
+        igr_ln = max(np.nonzero(sample['ingrs'])[0]) + 1
+
+
+        rec_class = sample['classes'] - 1
+        rec_id = self.ids[index]
+
+        if target == -1:
+            img_class = rndsample['classes'] - 1
+            img_id = self.ids[rndindex]
+        else:
+            img_class = sample['classes'] - 1
+            img_id = self.ids[index]
+
+        # output
+        if self.partition == 'train':
+            if self.semantic_reg:
+                return [num_images, instrs, itr_ln, ingrs, igr_ln], [target, img_class, rec_class]
+            else:
+                return [num_images, instrs, itr_ln, ingrs, igr_ln], [target]
+        else:
+            if self.semantic_reg:
+                return [num_images, instrs, itr_ln, ingrs, igr_ln], [target, img_class, rec_class, img_id, rec_id]
+            else:
+                return [num_images, instrs, itr_ln, ingrs, igr_ln], [target, img_id, rec_id]
 
     def __len__(self):
         return len(self.ids)
