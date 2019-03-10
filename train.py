@@ -132,36 +132,36 @@ for epochs in range(total_epochs):
             ###############################
             ###############################
             
-
-    print("="*20)
-    print("Starting test...")
-    # TODO: Perform test
-    correct =0
-    target_model.eval()
-    with torch.no_grad():
-        num_test_batches = len(test_loader)
-        for i, (input, target) in enumerate(test_loader):
-            start = time.time()
-            img_tensor, labels = get_tensor_from_data(input, target, dev_mode=dev_mode)
-            img_tensor = img_tensor.to(device)
-            labels = labels.to(device)
-            ################################################
-            output = torch.sigmoid(target_model(img_tensor.float()))
-            results = torch.nn.functional.binary_cross_entropy(output,labels)
-            test_result.data_entry(answers,results,epochs,output)
-            time_taken = time.time() - start
-            print("Epoch {}, batch{}, Time Taken: {} , Test Loss - {}".format(epochs,i,time_taken,results.item()))
-            ################################################
-        ############################################################
-        print("Test Accuracy for this epoch")
-        test_result.accuracy_calculation_epoch(epochs) #calculate accuracies.
-        latest = test_result.accuracies(epochs)
-        for threshold_value in latest.keys():
-            print("Threshold of {} :  {}".format(threshold_value,latest[threshold_value]))
-        ############################################################
-        
-    pickle.dump(storage,open("val_loss_class.pkl","wb"))
+	pickle.dump(storage,open("val_loss_class.pkl","wb"))
     pickle.dump(test_result,open("test_results.pkl","wb"))    
     print("Done 1 epoch. Pickles dumped again.")
-    
-    
+	
+print("="*20)
+print("Starting test...")
+# TODO: Perform test
+correct =0
+target_model.eval()
+with torch.no_grad():
+	num_test_batches = len(test_loader)
+	for i, (input, target) in enumerate(test_loader):
+		start = time.time()
+		img_tensor, labels = get_tensor_from_data(input, target, dev_mode=dev_mode)
+		img_tensor = img_tensor.to(device)
+		labels = labels.to(device)
+		################################################
+		output = torch.sigmoid(target_model(img_tensor.float()))
+		results = torch.nn.functional.binary_cross_entropy(output,labels)
+		test_result.data_entry(answers,results,epochs,output)
+		time_taken = time.time() - start
+		print("Epoch {}, batch{}, Time Taken: {} , Test Loss - {}".format(epochs,i,time_taken,results.item()))
+		################################################
+	############################################################
+	print("Test Accuracy for this epoch")
+	test_result.accuracy_calculation_epoch(epochs) #calculate accuracies.
+	latest = test_result.accuracies(epochs)
+	for threshold_value in latest.keys():
+		print("Threshold of {} :  {}".format(threshold_value,latest[threshold_value]))
+	############################################################
+print("Done")
+
+
