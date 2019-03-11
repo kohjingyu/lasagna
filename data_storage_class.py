@@ -1,4 +1,5 @@
 import copy
+import numpy as np
 class result_storage():
     def __init__(self,is_test,batch_size,num_classes,num_batches):
         self.is_test = is_test
