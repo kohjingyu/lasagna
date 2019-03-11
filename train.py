@@ -11,7 +11,7 @@ import pickle
 from data_storage_class import result_storage
 # TODO: Set this as command line args
 batch_size = 16
-workers = 16 # How many cores to use to load data
+workers = 8 # How many cores to use to load data
 dev_mode = False # Set this to False when training on Athena
 total_ingredients = 30167 # Found by loading vocab.bin
 
@@ -66,6 +66,9 @@ else:
 num_batches = len(train_loader) # now we can get your batches since dataset is chosen
 #initialise your model here
 target_model = torchvision.models.squeezenet1_0(num_classes=num_classes)
+# target_model = torchvision.models.resnet34(pretrained=True)
+# nf = target_model.fc.in_features
+# target_model.fc = torch.nn.Linear(nf, num_classes)
 optimiser = torch.optim.SGD(target_model.parameters(), lr=learning_rate, momentum=momentum_mod)  # TOGGLES HERE.
 target_model = target_model.to(device)
 storage = result_storage(False,batch_size,num_classes,num_batches)
