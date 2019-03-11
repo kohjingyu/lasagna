@@ -11,8 +11,8 @@ import pickle
 from data_storage_class import result_storage
 # TODO: Set this as command line args
 batch_size = 16
-workers = 8 # How many cores to use to load data
-dev_mode = True # Set this to False when training on Athena
+workers = 16 # How many cores to use to load data
+dev_mode = False # Set this to False when training on Athena
 total_ingredients = 30167 # Found by loading vocab.bin
 
 #############################
@@ -74,6 +74,7 @@ test_result = result_storage(True,batch_size,num_classes,num_batches)
 
 
 for epochs in range(total_epochs):
+    epoch_start = time.time()
     for i, (input, target) in enumerate(train_loader):
         start = time.time()
         img_tensor, labels = get_tensor_from_data(input, target, dev_mode=dev_mode)
@@ -96,6 +97,7 @@ for epochs in range(total_epochs):
         time_taken = time.time() - start
         print("Epoch {}, batch{}, Training Loss - {}".format(epochs,i,result.item()))
         print(f"Batch {i} / {num_batches}, Time taken: {time_taken}s")
+    print("Training took {}s".format(time.time() - epoch_start))
     print("="*20)
     print("Starting validation...")
     with torch.no_grad():
@@ -132,36 +134,36 @@ for epochs in range(total_epochs):
         ###############################
         ###############################
             
-	pickle.dump(storage,open("val_loss_class.pkl","wb"))
+    pickle.dump(storage,open("val_loss_class.pkl","wb"))
     pickle.dump(test_result,open("test_results.pkl","wb"))    
     print("Done 1 epoch. Pickles dumped again.")
-	
+    
 print("="*20)
 print("Starting test...")
 # TODO: Perform test
 correct =0
 target_model.eval()
 with torch.no_grad():
-	num_test_batches = len(test_loader)
-	for i, (input, target) in enumerate(test_loader):
-		start = time.time()
-		img_tensor, labels = get_tensor_from_data(input, target, dev_mode=dev_mode)
-		img_tensor = img_tensor.to(device)
-		labels = labels.to(device)
-		################################################
-		output = torch.sigmoid(target_model(img_tensor.float()))
-		results = torch.nn.functional.binary_cross_entropy(output,labels)
-		test_result.data_entry(answers,results,epochs,output)
-		time_taken = time.time() - start
-		print("Epoch {}, batch{}, Time Taken: {} , Test Loss - {}".format(epochs,i,time_taken,results.item()))
-		################################################
-	############################################################
-	print("Test Accuracy for this epoch")
-	test_result.accuracy_calculation_epoch(epochs) #calculate accuracies.
-	latest = test_result.accuracies(epochs)
-	for threshold_value in latest.keys():
-		print("Threshold of {} :  {}".format(threshold_value,latest[threshold_value]))
-	############################################################
+    num_test_batches = len(test_loader)
+    for i, (input, target) in enumerate(test_loader):
+        start = time.time()
+        img_tensor, labels = get_tensor_from_data(input, target, dev_mode=dev_mode)
+        img_tensor = img_tensor.to(device)
+        labels = labels.to(device)
+        ################################################
+        output = torch.sigmoid(target_model(img_tensor.float()))
+        results = torch.nn.functional.binary_cross_entropy(output,labels)
+        test_result.data_entry(answers,results,epochs,output)
+        time_taken = time.time() - start
+        print("Epoch {}, batch{}, Time Taken: {} , Test Loss - {}".format(epochs,i,time_taken,results.item()))
+        ################################################
+    ############################################################
+    print("Test Accuracy for this epoch")
+    test_result.accuracy_calculation_epoch(epochs) #calculate accuracies.
+    latest = test_result.accuracies(epochs)
+    for threshold_value in latest.keys():
+        print("Threshold of {} :  {}".format(threshold_value,latest[threshold_value]))
+    ############################################################
 print("Done")
 
 
