@@ -96,41 +96,41 @@ for epochs in range(total_epochs):
         time_taken = time.time() - start
         print("Epoch {}, batch{}, Training Loss - {}".format(epochs,i,result.item()))
         print(f"Batch {i} / {num_batches}, Time taken: {time_taken}s")
-        print("="*20)
-        print("Starting validation...")
-        with torch.no_grad():
-            target_model.eval()
-            num_val_batches = len(val_loader)
-            for i, (input, target) in enumerate(val_loader):
-                start = time.time()
-                #############################################################################################
-                img_tensor, labels = get_tensor_from_data(input, target, dev_mode=dev_mode)
-                img_tensor = img_tensor.to(device)
-                labels = labels.to(device)
-                # or whatever God Koh Jing Yu did. i'm not even sure how much i've defaced it.
-                # did you hear he's a god and has actual coding standards
-                output = torch.sigmoid(target_model(img_tensor.float())) #sigmoid values. since it's binary cross entropy.
-                results = torch.nn.functional.binary_cross_entropy(output,labels) #calculate results.
-                answers = labels.cpu().numpy() #obtain a numpy version of answers.
-                storage.data_entry(answers,results,epochs,output)
-                # again, store losses
-                time_taken = time.time() - start
-                print("Time Taken: {}   Batch loss: {}".format(time_taken,results.item()))
-                #############################################################################################                
-            # calculate accuracy
-            print("Validation Accuracy for this epoch")
-            storage.accuracy_calculation_epoch(epochs) #calculate accuracies.
-            latest = storage.accuracies(epochs)
-            for threshold_value in latest.keys():
-                print("Threshold of {} :  {}".format(threshold_value,latest[threshold_value]))
-            
-            ###############################
-            ###############################
-            ###############################
-            # TODO: Early stop if required. 
-            ###############################
-            ###############################
-            ###############################
+    print("="*20)
+    print("Starting validation...")
+    with torch.no_grad():
+        target_model.eval()
+        num_val_batches = len(val_loader)
+        for i, (input, target) in enumerate(val_loader):
+            start = time.time()
+            #############################################################################################
+            img_tensor, labels = get_tensor_from_data(input, target, dev_mode=dev_mode)
+            img_tensor = img_tensor.to(device)
+            labels = labels.to(device)
+            # or whatever God Koh Jing Yu did. i'm not even sure how much i've defaced it.
+            # did you hear he's a god and has actual coding standards
+            output = torch.sigmoid(target_model(img_tensor.float())) #sigmoid values. since it's binary cross entropy.
+            results = torch.nn.functional.binary_cross_entropy(output,labels) #calculate results.
+            answers = labels.cpu().numpy() #obtain a numpy version of answers.
+            storage.data_entry(answers,results,epochs,output)
+            # again, store losses
+            time_taken = time.time() - start
+            print("Time Taken: {}   Batch loss: {}".format(time_taken,results.item()))
+            #############################################################################################                
+        # calculate accuracy
+        print("Validation Accuracy for this epoch")
+        storage.accuracy_calculation_epoch(epochs) #calculate accuracies.
+        latest = storage.accuracies(epochs)
+        for threshold_value in latest.keys():
+            print("Threshold of {} :  {}".format(threshold_value,latest[threshold_value]))
+
+        ###############################
+        ###############################
+        ###############################
+        # TODO: Early stop if required. 
+        ###############################
+        ###############################
+        ###############################
             
 	pickle.dump(storage,open("val_loss_class.pkl","wb"))
     pickle.dump(test_result,open("test_results.pkl","wb"))    
