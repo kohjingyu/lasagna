@@ -53,12 +53,24 @@ else:
     val_loader = torch.utils.data.DataLoader(
             ImagerLoader(f"{data_dir}/images/",
                 transforms.Compose([
-                transforms.Scale(256), # rescale the image keeping the original aspect ratio
-                transforms.CenterCrop(224), # we get only the center of that rescaled
+                transforms.Scale(256),
+                transforms.CenterCrop(224),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                          std=[0.229, 0.224, 0.225]),
             ]), data_path=f"{data_dir}/lmdbs/", partition='val', sem_reg=None),
+            batch_size=batch_size, shuffle=True,
+            num_workers=workers, pin_memory=True)
+
+    test_loader = torch.utils.data.DataLoader(
+            ImagerLoader(f"{data_dir}/images/",
+                transforms.Compose([
+                transforms.Scale(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                         std=[0.229, 0.224, 0.225]),
+            ]), data_path=f"{data_dir}/lmdbs/", partition='test', sem_reg=None),
             batch_size=batch_size, shuffle=True,
             num_workers=workers, pin_memory=True)
 
@@ -119,7 +131,7 @@ for epochs in range(total_epochs):
             storage.data_entry(answers,results,epochs,output)
             # again, store losses
             time_taken = time.time() - start
-            print("Time Taken: {}   Batch loss: {}".format(time_taken,results.item()))
+            print("Time Taken: {}   Batch loss: {}".format(time_taken,results.item()), flush=True)
             #############################################################################################                
         # calculate accuracy
         print("Validation Accuracy for this epoch")
