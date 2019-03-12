@@ -14,9 +14,9 @@ from sklearn.metrics import f1_score
 
 # TODO: Set this as command line args
 batch_size = 16
-workers = 1 # How many cores to use to load data
-dev_mode = True # Set this to False when training on Athena
-data_dir = "./data"
+workers = 16 # How many cores to use to load data
+dev_mode = False # Set this to False when training on Athena
+data_dir = "./dataset"
 
 #############################
 # TOGGLES HERE
@@ -124,6 +124,7 @@ for epochs in range(total_epochs):
 
     with torch.no_grad():
         target_model.eval()
+        val_start = time.time()
         num_val_batches = len(val_loader)
         for i, (input, target) in enumerate(val_loader):
             start = time.time()
@@ -150,6 +151,7 @@ for epochs in range(total_epochs):
         # calculate accuracy
         average_f1 = total_f1 / total_samples
         print(f"F1 score for this epoch: {average_f1}")
+        print(f"Time taken: {time.time() - val_start}s")
         # print("Validation Accuracy for this epoch")
         # storage.accuracy_calculation_epoch(epochs) #calculate accuracies.
         # latest = storage.accuracies(epochs)
