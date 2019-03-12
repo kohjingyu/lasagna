@@ -14,6 +14,7 @@ batch_size = 16
 workers = 8 # How many cores to use to load data
 dev_mode = True # Set this to False when training on Athena
 total_ingredients = 30167 # Found by loading vocab.bin
+data_dir = "./data"
 
 #############################
 # TOGGLES HERE
@@ -27,7 +28,7 @@ total_epochs=30
 #############################
 if dev_mode:
     # Load from .npy file and batch manually
-    data_arr = np.load("./data/smalldata.npy") # shape: (112, 2)
+    data_arr = np.load(f"{data_dir}/smalldata.npy") # shape: (112, 2)
     num_batches = int(np.ceil(data_arr.shape[0] / batch_size))
     img_split = np.array_split(data_arr[:,0], num_batches)
     label_split = np.array_split(data_arr[:,1], num_batches)
@@ -37,7 +38,7 @@ if dev_mode:
 else:    
     from data_loader import ImagerLoader
     train_loader = torch.utils.data.DataLoader(
-            ImagerLoader("./data/images/",
+            ImagerLoader(f"{data_dir}/images/",
                 transforms.Compose([
                 transforms.Scale(256), # rescale the image keeping the original aspect ratio
                 transforms.CenterCrop(256), # we get only the center of that rescaled
@@ -46,19 +47,19 @@ else:
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                          std=[0.229, 0.224, 0.225]),
-            ]), data_path="./data/lmdbs/", partition='train', sem_reg=None),
+            ]), data_path=f"{data_dir}/lmdbs/", partition='train', sem_reg=None),
             batch_size=batch_size, shuffle=True,
             num_workers=workers, pin_memory=True)
 
     val_loader = torch.utils.data.DataLoader(
-            ImagerLoader("./data/images/",
+            ImagerLoader(f"{data_dir}/images/",
                 transforms.Compose([
                 transforms.Scale(256), # rescale the image keeping the original aspect ratio
                 transforms.CenterCrop(224), # we get only the center of that rescaled
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                          std=[0.229, 0.224, 0.225]),
-            ]), data_path="./data/lmdbs/", partition='val', sem_reg=None),
+            ]), data_path=f"{data_dir}/lmdbs/", partition='val', sem_reg=None),
             batch_size=batch_size, shuffle=True,
             num_workers=workers, pin_memory=True)
 
