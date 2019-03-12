@@ -9,11 +9,14 @@ from data import get_tensor_from_data
 import time
 import pickle
 from data_storage_class import result_storage
+
+from sklearn.metrics import f1_score
+
 # TODO: Set this as command line args
 batch_size = 16
-workers = 8 # How many cores to use to load data
-dev_mode = False # Set this to False when training on Athena
-data_dir = "./dataset"
+workers = 1 # How many cores to use to load data
+dev_mode = True # Set this to False when training on Athena
+data_dir = "./data"
 
 #############################
 # TOGGLES HERE
@@ -53,12 +56,24 @@ else:
     val_loader = torch.utils.data.DataLoader(
             ImagerLoader(f"{data_dir}/images/",
                 transforms.Compose([
-                transforms.Scale(256), # rescale the image keeping the original aspect ratio
-                transforms.CenterCrop(224), # we get only the center of that rescaled
+                transforms.Scale(256),
+                transforms.CenterCrop(224),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                          std=[0.229, 0.224, 0.225]),
             ]), data_path=f"{data_dir}/lmdbs/", partition='val', sem_reg=None),
+            batch_size=batch_size, shuffle=True,
+            num_workers=workers, pin_memory=True)
+
+    test_loader = torch.utils.data.DataLoader(
+            ImagerLoader(f"{data_dir}/images/",
+                transforms.Compose([
+                transforms.Scale(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                         std=[0.229, 0.224, 0.225]),
+            ]), data_path=f"{data_dir}/lmdbs/", partition='test', sem_reg=None),
             batch_size=batch_size, shuffle=True,
             num_workers=workers, pin_memory=True)
 
@@ -99,9 +114,14 @@ for epochs in range(total_epochs):
         optimiser.step()
         time_taken = time.time() - start
         print(f"Epoch {epochs}, batch {i} / {num_batches}, loss: {result.item()}, time taken: {time_taken}s", flush=True)
+        break
     print("Total train time: {}s".format(time.time() - epoch_start))
     print("="*20)
     print("Starting validation...")
+
+    total_f1 = 0
+    total_samples = 0
+
     with torch.no_grad():
         target_model.eval()
         num_val_batches = len(val_loader)
@@ -111,22 +131,30 @@ for epochs in range(total_epochs):
             img_tensor, labels = get_tensor_from_data(input, target, dev_mode=dev_mode)
             img_tensor = img_tensor.to(device)
             labels = labels.to(device)
-            # or whatever God Koh Jing Yu did. i'm not even sure how much i've defaced it.
-            # did you hear he's a god and has actual coding standards
             output = torch.sigmoid(target_model(img_tensor.float())) #sigmoid values. since it's binary cross entropy.
             results = torch.nn.functional.binary_cross_entropy(output,labels) #calculate results.
-            answers = labels.cpu().numpy() #obtain a numpy version of answers.
-            storage.data_entry(answers,results,epochs,output)
+            # answers = labels.cpu().numpy() #obtain a numpy version of answers.
+
+            preds = (output > 0.5).cpu().numpy()
+            labels_arr = labels.cpu().numpy()
+            total_samples += preds.shape[0]
+
+            for j in range(preds.shape[0]):
+                total_f1 += f1_score(labels_arr[j,:], preds[j,:], average='macro')
+
+            # storage.data_entry(answers,results,epochs,output)
             # again, store losses
             time_taken = time.time() - start
-            print("Time Taken: {}   Batch loss: {}".format(time_taken,results.item()))
+            print(f"Batch {i} / {num_val_batches}, loss: {results.item()}, time taken: {time_taken}s", flush=True)
             #############################################################################################                
         # calculate accuracy
-        print("Validation Accuracy for this epoch")
-        storage.accuracy_calculation_epoch(epochs) #calculate accuracies.
-        latest = storage.accuracies(epochs)
-        for threshold_value in latest.keys():
-            print("Threshold of {} :  {}".format(threshold_value,latest[threshold_value]))
+        average_f1 = total_f1 / total_samples
+        print(f"F1 score for this epoch: {average_f1}")
+        # print("Validation Accuracy for this epoch")
+        # storage.accuracy_calculation_epoch(epochs) #calculate accuracies.
+        # latest = storage.accuracies(epochs)
+        # for threshold_value in latest.keys():
+        #     print("Threshold of {} :  {}".format(threshold_value,latest[threshold_value]))
 
         ###############################
         ###############################
