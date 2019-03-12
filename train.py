@@ -28,7 +28,7 @@ momentum_mod = 0.01
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
 num_classes = 30167 # Found by loading vocab.bin
-total_epochs = 1
+total_epochs = 20
 #############################
 if dev_mode:
     # Load from .npy file and batch manually
@@ -83,7 +83,7 @@ else:
 num_batches = len(train_loader) # now we can get your batches since dataset is chosen
 #initialise your model here
 # target_model = torchvision.models.squeezenet1_0(num_classes=num_classes)
-target_model = torchvision.models.resnet34(pretrained=True)
+target_model = torchvision.models.resnet50(pretrained=True)
 nf = target_model.fc.in_features
 target_model.fc = torch.nn.Linear(nf, num_classes)
 optimiser = torch.optim.SGD(target_model.parameters(), lr=learning_rate, momentum=momentum_mod)  # TOGGLES HERE.
@@ -163,7 +163,7 @@ for epochs in range(total_epochs):
         # Save best performing model
         if average_f1 > best_f1:
             best_f1 = average_f1
-            torch.save(target_model.state_dict(), f'{snapshots_dir}/best_resnet34.pth')
+            torch.save(target_model.state_dict(), f'{snapshots_dir}/best_resnet50.pth')
 
         ###############################
         ###############################
@@ -180,7 +180,7 @@ for epochs in range(total_epochs):
 print("="*20)
 print("Starting test...")
 print("Loading best model...")
-saved_state_dict = torch.load(f"{snapshots_dir}/best_resnet34.pth", map_location='cpu')
+saved_state_dict = torch.load(f"{snapshots_dir}/best_resnet50.pth", map_location='cpu')
 target_model.load_state_dict(saved_state_dict, strict=False)
 
 correct =0
