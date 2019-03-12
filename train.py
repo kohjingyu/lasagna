@@ -94,8 +94,7 @@ for epochs in range(total_epochs):
         result.backward()
         optimiser.step()
         time_taken = time.time() - start
-        print("Epoch {}, batch{}, Training Loss - {}".format(epochs,i,result.item()))
-        print(f"Batch {i} / {num_batches}, Time taken: {time_taken}s")
+        print(f"Epoch {epochs}, batch {i} / {num_batches}, loss: {result.item()}, time taken: {time_taken}s", flush=True)
     print("="*20)
     print("Starting validation...")
     with torch.no_grad():
