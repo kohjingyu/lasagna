@@ -77,6 +77,7 @@ test_result = result_storage(True,batch_size,num_classes,num_batches)
 
 
 for epochs in range(total_epochs):
+    epoch_start = time.time()
     for i, (input, target) in enumerate(train_loader):
         start = time.time()
         img_tensor, labels = get_tensor_from_data(input, target, dev_mode=dev_mode)
@@ -98,6 +99,7 @@ for epochs in range(total_epochs):
         optimiser.step()
         time_taken = time.time() - start
         print(f"Epoch {epochs}, batch {i} / {num_batches}, loss: {result.item()}, time taken: {time_taken}s", flush=True)
+    print("Total train time: {}s".format(time.time() - epoch_start))
     print("="*20)
     print("Starting validation...")
     with torch.no_grad():
