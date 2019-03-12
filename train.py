@@ -12,9 +12,8 @@ from data_storage_class import result_storage
 # TODO: Set this as command line args
 batch_size = 16
 workers = 8 # How many cores to use to load data
-dev_mode = True # Set this to False when training on Athena
-total_ingredients = 30167 # Found by loading vocab.bin
-data_dir = "./data"
+dev_mode = False # Set this to False when training on Athena
+data_dir = "./dataset"
 
 #############################
 # TOGGLES HERE
@@ -22,9 +21,9 @@ learning_rate = 0.01
 momentum_mod = 0.01
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
-Epochal_loss=0
-num_classes = 30167
-total_epochs=30
+Epochal_loss = 0
+num_classes = 30167 # Found by loading vocab.bin
+total_epochs = 30
 #############################
 if dev_mode:
     # Load from .npy file and batch manually

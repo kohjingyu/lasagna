@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 
+total_ingredients = 30167
+
 def get_tensor_from_data(input, target, dev_mode=False):
     if dev_mode:
         input_arr = np.array([input[i] for i in range(input.shape[0])]) # (16, 3, 224, 224)
