@@ -9,14 +9,17 @@ from data import get_tensor_from_data
 import time
 import pickle
 from data_storage_class import result_storage
+import pathlib
 
 from sklearn.metrics import f1_score
 
 # TODO: Set this as command line args
-batch_size = 16
+batch_size = 32
 workers = 16 # How many cores to use to load data
 dev_mode = False # Set this to False when training on Athena
 data_dir = "./dataset"
+snapshots_dir = "./snapshots"
+pathlib.Path(snapshots_dir).mkdir(exist_ok=True) # Create snapshot directory if it doesn't exist
 
 #############################
 # TOGGLES HERE
@@ -24,9 +27,8 @@ learning_rate = 0.01
 momentum_mod = 0.01
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
-Epochal_loss = 0
 num_classes = 30167 # Found by loading vocab.bin
-total_epochs = 30
+total_epochs = 1
 #############################
 if dev_mode:
     # Load from .npy file and batch manually
@@ -90,6 +92,7 @@ storage = result_storage(False,batch_size,num_classes,num_batches)
 test_result = result_storage(True,batch_size,num_classes,num_batches)
 ###########################################################
 
+best_f1 = 0
 
 for epochs in range(total_epochs):
     epoch_start = time.time()
@@ -114,7 +117,6 @@ for epochs in range(total_epochs):
         optimiser.step()
         time_taken = time.time() - start
         print(f"Epoch {epochs}, batch {i} / {num_batches}, loss: {result.item()}, time taken: {time_taken}s", flush=True)
-        break
     print("Total train time: {}s".format(time.time() - epoch_start))
     print("="*20)
     print("Starting validation...")
@@ -158,6 +160,11 @@ for epochs in range(total_epochs):
         # for threshold_value in latest.keys():
         #     print("Threshold of {} :  {}".format(threshold_value,latest[threshold_value]))
 
+        # Save best performing model
+        if average_f1 > best_f1:
+            best_f1 = average_f1
+            torch.save(target_model.state_dict(), f'{snapshots_dir}/best_resnet34.pth')
+
         ###############################
         ###############################
         ###############################
@@ -172,9 +179,15 @@ for epochs in range(total_epochs):
     
 print("="*20)
 print("Starting test...")
-# TODO: Perform test
+print("Loading best model...")
+saved_state_dict = torch.load(f"{snapshots_dir}/best_resnet34.pth", map_location='cpu')
+target_model.load_state_dict(saved_state_dict, strict=False)
+
 correct =0
 target_model.eval()
+total_f1 = 0
+total_samples = 0
+
 with torch.no_grad():
     num_test_batches = len(test_loader)
     for i, (input, target) in enumerate(test_loader):
@@ -185,17 +198,27 @@ with torch.no_grad():
         ################################################
         output = torch.sigmoid(target_model(img_tensor.float()))
         results = torch.nn.functional.binary_cross_entropy(output,labels)
-        test_result.data_entry(answers,results,epochs,output)
+
+        preds = (output > 0.5).cpu().numpy()
+        labels_arr = labels.cpu().numpy()
+        total_samples += preds.shape[0]
+        for j in range(preds.shape[0]):
+            total_f1 += f1_score(labels_arr[j,:], preds[j,:], average='macro')
+        # test_result.data_entry(answers,results,epochs,output)
         time_taken = time.time() - start
-        print("Epoch {}, batch{}, Time Taken: {} , Test Loss - {}".format(epochs,i,time_taken,results.item()))
+        print(f"Test batch {i} / {num_test_batches}, time Taken: {time_taken} , test loss: {results.item()}")
         ################################################
     ############################################################
-    print("Test Accuracy for this epoch")
-    test_result.accuracy_calculation_epoch(epochs) #calculate accuracies.
-    latest = test_result.accuracies(epochs)
-    for threshold_value in latest.keys():
-        print("Threshold of {} :  {}".format(threshold_value,latest[threshold_value]))
+    # print("Test Accuracy for this epoch")
+    # test_result.accuracy_calculation_epoch(epochs) #calculate accuracies.
+    # latest = test_result.accuracies(epochs)
+    # for threshold_value in latest.keys():
+    #     print("Threshold of {} :  {}".format(threshold_value,latest[threshold_value]))
     ############################################################
+    average_f1 = total_f1 / total_samples
+    print(f"F1 score for this epoch: {average_f1}")
+    print(f"Time taken: {time.time() - val_start}s")
+
 print("Done")
 
 
