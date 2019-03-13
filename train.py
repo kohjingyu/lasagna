@@ -5,7 +5,7 @@ from PIL import Image
 import torchvision
 import pickle
 import numpy as np
-from data import get_tensor_from_data
+from data import get_tensor_from_data, get_class_mapping
 import time
 import pickle
 from data_storage_class import result_storage
@@ -24,12 +24,14 @@ pathlib.Path(snapshots_dir).mkdir(exist_ok=True) # Create snapshot directory if 
 #############################
 # TOGGLES HERE
 learning_rate = 0.01
-momentum_mod = 0.01
+momentum_mod = 0.9
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
-num_classes = 30167 # Found by loading vocab.bin
-total_epochs = 20
+class_mapping = get_class_mapping()
+num_classes = len(class_mapping)
+total_epochs = 10
 #############################
+
 if dev_mode:
     # Load from .npy file and batch manually
     data_arr = np.load(f"{data_dir}/smalldata.npy") # shape: (112, 2)
@@ -81,11 +83,12 @@ else:
 
 #####################################################################
 num_batches = len(train_loader) # now we can get your batches since dataset is chosen
+
 #initialise your model here
-# target_model = torchvision.models.squeezenet1_0(num_classes=num_classes)
 target_model = torchvision.models.resnet50(pretrained=True)
 nf = target_model.fc.in_features
 target_model.fc = torch.nn.Linear(nf, num_classes)
+
 optimiser = torch.optim.SGD(target_model.parameters(), lr=learning_rate, momentum=momentum_mod)  # TOGGLES HERE.
 target_model = target_model.to(device)
 storage = result_storage(False,batch_size,num_classes,num_batches)
@@ -98,11 +101,12 @@ for epochs in range(total_epochs):
     epoch_start = time.time()
     for i, (input, target) in enumerate(train_loader):
         start = time.time()
-        img_tensor, labels = get_tensor_from_data(input, target, dev_mode=dev_mode)
+        img_tensor, labels = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
         # BIG DATA IS PROCESSED
         # Now we have a (16, 3, 224, 224) Tensor of images, and a (16, 30167) Tensor of labels
         # We can do d e e p l e a r n i n g
         # what a god.
+
         #################################################
         #TRAINING BIT
         target_model.train() # set train mode
@@ -113,6 +117,7 @@ for epochs in range(total_epochs):
         result = torch.nn.functional.binary_cross_entropy(output,target)
         storage.store_train_loss(epochs,result)
         #################################################
+
         result.backward()
         optimiser.step()
         time_taken = time.time() - start
@@ -131,7 +136,7 @@ for epochs in range(total_epochs):
         for i, (input, target) in enumerate(val_loader):
             start = time.time()
             #############################################################################################
-            img_tensor, labels = get_tensor_from_data(input, target, dev_mode=dev_mode)
+            img_tensor, labels = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
             img_tensor = img_tensor.to(device)
             labels = labels.to(device)
             output = torch.sigmoid(target_model(img_tensor.float())) #sigmoid values. since it's binary cross entropy.
@@ -189,10 +194,11 @@ total_f1 = 0
 total_samples = 0
 
 with torch.no_grad():
+    test_start = time.time()
     num_test_batches = len(test_loader)
     for i, (input, target) in enumerate(test_loader):
         start = time.time()
-        img_tensor, labels = get_tensor_from_data(input, target, dev_mode=dev_mode)
+        img_tensor, labels = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
         img_tensor = img_tensor.to(device)
         labels = labels.to(device)
         ################################################
@@ -206,7 +212,7 @@ with torch.no_grad():
             total_f1 += f1_score(labels_arr[j,:], preds[j,:], average='macro')
         # test_result.data_entry(answers,results,epochs,output)
         time_taken = time.time() - start
-        print(f"Test batch {i} / {num_test_batches}, time Taken: {time_taken} , test loss: {results.item()}")
+        print(f"Test batch {i} / {num_test_batches}, time Taken: {time_taken} , test loss: {results.item()}", flush=True)
         ################################################
     ############################################################
     # print("Test Accuracy for this epoch")
@@ -217,7 +223,7 @@ with torch.no_grad():
     ############################################################
     average_f1 = total_f1 / total_samples
     print(f"F1 score for this epoch: {average_f1}")
-    print(f"Time taken: {time.time() - val_start}s")
+    print(f"Time taken: {time.time() - test_start}s")
 
 print("Done")
 
