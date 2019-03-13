@@ -26,7 +26,8 @@ def get_tensor_from_data(input, target, mapping, dev_mode=False):
         for i in range(target.shape[0]):
             nonzero = np.nonzero(target_arr)[0]
             for j in nonzero:
-                target_arr[i, mapping[j]] = 1
+                if j in mapping:
+                    target_arr[i, mapping[j]] = 1
 
         img_tensor = torch.from_numpy(input_arr) # torch.Size([1, 3, 224, 224])
         labels = torch.from_numpy(target_arr).type(torch.FloatTensor)
