@@ -11,7 +11,7 @@ def get_class_mapping():
 
     mapping = {}
     for idx in nonzero_idx:
-        mapping[len(mapping)] = idx
+        mapping[idx] = len(mapping)
 
     return mapping
 

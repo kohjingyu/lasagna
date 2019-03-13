@@ -16,7 +16,7 @@ from sklearn.metrics import f1_score
 # TODO: Set this as command line args
 batch_size = 32
 workers = 16 # How many cores to use to load data
-dev_mode = False # Set this to False when training on Athena
+dev_mode = True # Set this to False when training on Athena
 data_dir = "./dataset"
 snapshots_dir = "./snapshots"
 pathlib.Path(snapshots_dir).mkdir(exist_ok=True) # Create snapshot directory if it doesn't exist
