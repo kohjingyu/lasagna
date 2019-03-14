@@ -44,7 +44,8 @@ def get_tensor_from_data(input, target, mapping, dev_mode=False):
         for batch in range(current_batch_size):
             for j in range(int(num_ingredients[batch])):
                 current_ingredient_idx = int(ingredient_idx[batch, j])
-                mapped_idx = mapping[current_ingredient_idx]
-                labels[batch, mapped_idx] = 1
+                if current_ingredient_idx in mapping:
+                    mapped_idx = mapping[current_ingredient_idx]
+                    labels[batch, mapped_idx] = 1
 
     return img_tensor, labels
