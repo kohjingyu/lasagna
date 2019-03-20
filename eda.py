@@ -118,7 +118,8 @@ for i, (input, target) in enumerate(train_loader):
     img_tensor, labels, recipe_ids = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
 
     for j in range(int(labels.size()[0])):
-        ingredient_labels.append(labels[j].cpu().numpy())
+        nonzero = np.nonzero(labels[j].cpu().numpy())
+        ingredient_labels.append(nonzero)
 
     for recipe in recipe_ids:
         ingredients.append(ingredient_mapping[recipe])
