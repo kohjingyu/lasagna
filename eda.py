@@ -105,34 +105,45 @@ for recipe in recipe_list:
     ingredients = [x["text"] for x in recipe["ingredients"]]
     ingredient_mapping[recipe["id"]] = ingredients
 
-np.save("dataset/ingredient_mapping.npy", ingredient_mapping)
+np.save("ingredient_mapping.npy", ingredient_mapping)
 ###########################################################
 
 best_f1 = 0
 
+ingredient_labels = []
+ingredients = []
+
 for i, (input, target) in enumerate(train_loader):
     start = time.time()
     img_tensor, labels, recipe_ids = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
-    print(recipe_ids)
+
+    for j in range(int(labels.size()[0])):
+        ingredient_labels.append(labels[j].cpu().numpy())
+
+    for recipe in recipe_ids:
+        ingredients.append(ingredient_mapping[recipe])
+
     # BIG DATA IS PROCESSED
     # Now we have a (16, 3, 224, 224) Tensor of images, and a (16, 30167) Tensor of labels
     # We can do d e e p l e a r n i n g
     # what a god.
 
-    with torch.no_grad():
-        target_model.eval()
-        num_val_batches = len(val_loader)
-        for i, (input, target) in enumerate(val_loader):
-            start = time.time()
-            #############################################################################################
-            img_tensor, labels = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
-            img_tensor = img_tensor.to(device)
+ingredient_info = {"ingredient_text": ingredients, "ingredient_labels": ingredient_labels}
+np.save("ingredient_info.npy", ingredient_info)
 
-            time_taken = time.time() - start
-            print(f"Batch {i} / {num_val_batches}, time taken: {time_taken}s", flush=True)
-            #############################################################################################                
+with torch.no_grad():
+    target_model.eval()
+    num_val_batches = len(val_loader)
+    for i, (input, target) in enumerate(val_loader):
+        start = time.time()
+        #############################################################################################
+        img_tensor, labels, recipe_ids = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
+        img_tensor = img_tensor.to(device)
 
-    
+        time_taken = time.time() - start
+        print(f"Batch {i} / {num_val_batches}, time taken: {time_taken}s", flush=True)
+        #############################################################################################                
+
 print("="*20)
 print("Starting test...")
 
@@ -143,7 +154,7 @@ with torch.no_grad():
     num_test_batches = len(test_loader)
     for i, (input, target) in enumerate(test_loader):
         start = time.time()
-        img_tensor, labels = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
+        img_tensor, labels, recipe_ids = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
         img_tensor = img_tensor.to(device)
         labels = labels.to(device)
 
