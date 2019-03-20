@@ -52,13 +52,6 @@ class ImagerLoader(data.Dataset):
 
     def __getitem__(self, index):
         recipId = self.ids[index]
-        # we force 80 percent of them to be a mismatch
-        if self.partition == 'train':
-            match = np.random.uniform() > self.mismtch
-        elif self.partition == 'val' or self.partition == 'test':
-            match = True
-        else:
-            raise 'Partition name not well defined'
 
         target = 1 #match and 1 or -1
 
@@ -77,6 +70,7 @@ class ImagerLoader(data.Dataset):
 
             loader_path = [imgs[imgIdx]['id'][i] for i in range(4)]
             loader_path = os.path.join(*loader_path)
+            print(imgs[imgIdx]['id'])
             path = os.path.join(self.imgPath, self.partition, loader_path, imgs[imgIdx]['id'])
         else:
             # we randomly pick one non-matching image
@@ -99,7 +93,7 @@ class ImagerLoader(data.Dataset):
 
             path = self.imgPath + rndimgs[imgIdx]['id']
 
-            # instructions
+        # instructions
         instrs = sample['intrs']
         itr_ln = len(instrs)
         t_inst = np.zeros((self.maxInst, np.shape(instrs)[1]), dtype=np.float32)
@@ -197,7 +191,7 @@ class PreviewLoader(data.Dataset):
         loader_path = os.path.join(*loader_path)
         path = os.path.join(self.imgPath, self.partition, loader_path, imgs[imgIdx]['id'])
 
-            # instructions
+        # instructions
         instrs = sample['intrs']
         itr_ln = len(instrs)
         t_inst = np.zeros((self.maxInst, np.shape(instrs)[1]), dtype=np.float32)
