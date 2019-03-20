@@ -127,6 +127,7 @@ for i, (input, target) in enumerate(train_loader):
     # Now we have a (16, 3, 224, 224) Tensor of images, and a (16, 30167) Tensor of labels
     # We can do d e e p l e a r n i n g
     # what a god.
+    print(f"Batch {i} / {num_batches}")
 
 ingredient_info = {"ingredient_text": ingredients, "ingredient_labels": ingredient_labels}
 np.save("ingredient_info.npy", ingredient_info)
