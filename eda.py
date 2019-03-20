@@ -11,6 +11,9 @@ import pickle
 from data_storage_class import result_storage
 import pathlib
 
+import json
+from tqdm import tqdm
+
 from sklearn.metrics import f1_score
 
 # TODO: Set this as command line args
@@ -93,6 +96,15 @@ optimiser = torch.optim.SGD(target_model.parameters(), lr=learning_rate, momentu
 target_model = target_model.to(device)
 storage = result_storage(False,batch_size,num_classes,num_batches)
 test_result = result_storage(True,batch_size,num_classes,num_batches)
+
+ingredient_mapping = {}
+with open('dataset/det_ingrs.json') as f:
+    recipe_list = json.load(f)
+
+for recipe in recipe_list:
+    ingredients = [x["text"] for x in recipes["ingredients"]]
+    ingredient_mapping[recipe["id"]] = ingredients
+    print(ingredients)
 ###########################################################
 
 best_f1 = 0
