@@ -128,7 +128,8 @@ for i, (input, target) in enumerate(train_loader):
     # Now we have a (16, 3, 224, 224) Tensor of images, and a (16, 30167) Tensor of labels
     # We can do d e e p l e a r n i n g
     # what a god.
-    print(f"Batch {i} / {num_batches}")
+    time_taken = time.time() - start
+    print(f"Batch {i} / {num_batches}, time taken: {time_taken}s", flush=True)
 
 ingredient_info = {"ingredient_text": ingredients, "ingredient_labels": ingredient_labels}
 np.save("ingredient_info.npy", ingredient_info)
@@ -140,7 +141,13 @@ with torch.no_grad():
         start = time.time()
         #############################################################################################
         img_tensor, labels, recipe_ids = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
-        img_tensor = img_tensor.to(device)
+
+        for j in range(int(labels.size()[0])):
+            nonzero = np.nonzero(labels[j].cpu().numpy())
+            ingredient_labels.append(nonzero)
+
+        for recipe in recipe_ids:
+            ingredients.append(ingredient_mapping[recipe])
 
         time_taken = time.time() - start
         print(f"Batch {i} / {num_val_batches}, time taken: {time_taken}s", flush=True)
@@ -157,12 +164,19 @@ with torch.no_grad():
     for i, (input, target) in enumerate(test_loader):
         start = time.time()
         img_tensor, labels, recipe_ids = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
-        img_tensor = img_tensor.to(device)
-        labels = labels.to(device)
 
+        for j in range(int(labels.size()[0])):
+            nonzero = np.nonzero(labels[j].cpu().numpy())
+            ingredient_labels.append(nonzero)
+
+        for recipe in recipe_ids:
+            ingredients.append(ingredient_mapping[recipe])
+        
         time_taken = time.time() - start
         print(f"Test batch {i} / {num_test_batches}, time Taken: {time_taken}", flush=True)
 
 print("Done")
 
+ingredient_info = {"ingredient_text": ingredients, "ingredient_labels": ingredient_labels}
+np.save("ingredient_info.npy", ingredient_info)
 
