@@ -131,9 +131,6 @@ for i, (input, target) in enumerate(train_loader):
     time_taken = time.time() - start
     print(f"Batch {i} / {num_batches}, time taken: {time_taken}s", flush=True)
 
-    if i >= 100:
-        break
-
 ingredient_info = {"ingredient_text": ingredients, "ingredient_labels": ingredient_labels}
 np.save("ingredient_info.npy", ingredient_info)
 
@@ -154,10 +151,7 @@ with torch.no_grad():
 
         time_taken = time.time() - start
         print(f"Batch {i} / {num_val_batches}, time taken: {time_taken}s", flush=True)
-        #############################################################################################                
-
-        if i >= 100:
-            break
+        #############################################################################################
 
 print("="*20)
 print("Starting test...")
@@ -180,9 +174,7 @@ with torch.no_grad():
 
         time_taken = time.time() - start
         print(f"Test batch {i} / {num_test_batches}, time Taken: {time_taken}", flush=True)
-        
-        if i >= 100:
-                break
+
 
 print("Done")
 
