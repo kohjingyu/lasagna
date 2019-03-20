@@ -117,10 +117,12 @@ for i, (input, target) in enumerate(train_loader):
     start = time.time()
     img_tensor, labels, recipe_ids = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
 
-    for j in range(int(labels.size()[0])):
+    current_batch_size = int(labels.size()[0])
+    for j in range(current_batch_size):
         nonzero = np.nonzero(labels[j].cpu().numpy())
         ingredient_labels.append(nonzero)
 
+    assert(len(recipe_ids) == current_batch_size)
     for recipe in recipe_ids:
         ingredients.append(ingredient_mapping[recipe])
 
@@ -142,10 +144,12 @@ with torch.no_grad():
         #############################################################################################
         img_tensor, labels, recipe_ids = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
 
-        for j in range(int(labels.size()[0])):
+        current_batch_size = int(labels.size()[0])
+        for j in range(current_batch_size):
             nonzero = np.nonzero(labels[j].cpu().numpy())
             ingredient_labels.append(nonzero)
 
+        assert(len(recipe_ids) == current_batch_size)
         for recipe in recipe_ids:
             ingredients.append(ingredient_mapping[recipe])
 
@@ -165,10 +169,12 @@ with torch.no_grad():
         start = time.time()
         img_tensor, labels, recipe_ids = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
 
-        for j in range(int(labels.size()[0])):
+        current_batch_size = int(labels.size()[0])
+        for j in range(current_batch_size):
             nonzero = np.nonzero(labels[j].cpu().numpy())
             ingredient_labels.append(nonzero)
 
+        assert(len(recipe_ids) == current_batch_size)
         for recipe in recipe_ids:
             ingredients.append(ingredient_mapping[recipe])
 
