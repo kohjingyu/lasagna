@@ -35,6 +35,7 @@ def get_tensor_from_data(input, target, mapping, dev_mode=False):
         img_tensor = input[0] # torch.Size([1, 3, 224, 224])
         num_ingredients = input[4] # torch.Size([1]) (number of ingredients?)
         ingredient_idx = input[3] # torch.Size([1, 20]) (ingredient id?)
+        recipe_id = input[5]
 
         current_batch_size = int(img_tensor.size()[0])
 
@@ -48,4 +49,4 @@ def get_tensor_from_data(input, target, mapping, dev_mode=False):
                     mapped_idx = mapping[current_ingredient_idx]
                     labels[batch, mapped_idx] = 1
 
-    return img_tensor, labels
+    return img_tensor, labels, recipe_id

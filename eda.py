@@ -18,8 +18,8 @@ from sklearn.metrics import f1_score
 
 # TODO: Set this as command line args
 batch_size = 32
-workers = 1 # How many cores to use to load data
-dev_mode = True # Set this to False when training on Athena
+workers = 16 # How many cores to use to load data
+dev_mode = False # Set this to False when training on Athena
 data_dir = "./dataset"
 snapshots_dir = "./snapshots"
 pathlib.Path(snapshots_dir).mkdir(exist_ok=True) # Create snapshot directory if it doesn't exist
@@ -102,21 +102,22 @@ with open('dataset/det_ingrs.json') as f:
     recipe_list = json.load(f)
 
 for recipe in recipe_list:
-    ingredients = [x["text"] for x in recipes["ingredients"]]
+    ingredients = [x["text"] for x in recipe["ingredients"]]
     ingredient_mapping[recipe["id"]] = ingredients
-    print(ingredients)
+
+np.save("dataset/ingredient_mapping.npy", ingredient_mapping)
 ###########################################################
 
 best_f1 = 0
 
 for i, (input, target) in enumerate(train_loader):
     start = time.time()
-    img_tensor, labels = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
+    img_tensor, labels, recipe_ids = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
+    print(recipe_ids)
     # BIG DATA IS PROCESSED
     # Now we have a (16, 3, 224, 224) Tensor of images, and a (16, 30167) Tensor of labels
     # We can do d e e p l e a r n i n g
     # what a god.
-    print(labels.size())
 
     with torch.no_grad():
         target_model.eval()

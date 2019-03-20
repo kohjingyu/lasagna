@@ -127,14 +127,14 @@ class ImagerLoader(data.Dataset):
         # output
         if self.partition == 'train':
             if self.semantic_reg:
-                return [img, instrs, itr_ln, ingrs, igr_ln], [target, img_class, rec_class]
+                return [img, instrs, itr_ln, ingrs, igr_ln, recipId], [target, img_class, rec_class]
             else:
-                return [img, instrs, itr_ln, ingrs, igr_ln], [target]
+                return [img, instrs, itr_ln, ingrs, igr_ln, recipId], [target]
         else:
             if self.semantic_reg:
-                return [img, instrs, itr_ln, ingrs, igr_ln], [target, img_class, rec_class, img_id, rec_id]
+                return [img, instrs, itr_ln, ingrs, igr_ln, recipId], [target, img_class, rec_class, img_id, rec_id]
             else:
-                return [img, instrs, itr_ln, ingrs, igr_ln], [target, img_id, rec_id]
+                return [img, instrs, itr_ln, ingrs, igr_ln, recipId], [target, img_id, rec_id]
 
     def __len__(self):
         return len(self.ids)
