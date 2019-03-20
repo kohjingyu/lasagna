@@ -132,7 +132,7 @@ for i, (input, target) in enumerate(train_loader):
     print(f"Batch {i} / {num_batches}, time taken: {time_taken}s", flush=True)
 
 ingredient_info = {"ingredient_text": ingredients, "ingredient_labels": ingredient_labels}
-np.save("ingredient_info.npy", ingredient_info)
+np.save("ingredient_info_train.npy", ingredient_info)
 
 with torch.no_grad():
     target_model.eval()
@@ -179,5 +179,5 @@ with torch.no_grad():
 print("Done")
 
 ingredient_info = {"ingredient_text": ingredients, "ingredient_labels": ingredient_labels}
-np.save("ingredient_info.npy", ingredient_info)
+np.save("ingredient_info_all.npy", ingredient_info)
 
