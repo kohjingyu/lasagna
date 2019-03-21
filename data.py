@@ -13,8 +13,6 @@ def get_class_mapping():
     for idx in nonzero_idx:
         mapping[idx] = len(mapping)
 
-    del mapping[1] # 1 is a fake index
-
     return mapping
 
 def get_tensor_from_data(input, target, mapping, dev_mode=False):
@@ -48,7 +46,7 @@ def get_tensor_from_data(input, target, mapping, dev_mode=False):
         for batch in range(current_batch_size):
             for j in range(int(num_ingredients[batch])):
                 current_ingredient_idx = int(ingredient_idx[batch, j])
-                if current_ingredient_idx in mapping:
+                if current_ingredient_idx in mapping and current_ingredient_idx > 1:
                     mapped_idx = mapping[current_ingredient_idx]
                     labels[batch, mapped_idx] = 1
 
