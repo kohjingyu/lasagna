@@ -13,6 +13,8 @@ def get_class_mapping():
     for idx in nonzero_idx:
         mapping[idx] = len(mapping)
 
+    del mapping[1] # 1 is a fake index
+
     return mapping
 
 def get_tensor_from_data(input, target, mapping, dev_mode=False):
@@ -31,6 +33,7 @@ def get_tensor_from_data(input, target, mapping, dev_mode=False):
 
         img_tensor = torch.from_numpy(input_arr) # torch.Size([1, 3, 224, 224])
         labels = torch.from_numpy(target_arr).type(torch.FloatTensor)
+        recipe_id = ""
     else:
         img_tensor = input[0] # torch.Size([1, 3, 224, 224])
         num_ingredients = input[4] # torch.Size([1]) (number of ingredients?)
@@ -49,4 +52,4 @@ def get_tensor_from_data(input, target, mapping, dev_mode=False):
                     mapped_idx = mapping[current_ingredient_idx]
                     labels[batch, mapped_idx] = 1
 
-    return img_tensor, ingredient_idx, recipe_id
+    return img_tensor, labels, recipe_id
