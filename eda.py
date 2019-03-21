@@ -19,7 +19,7 @@ from sklearn.metrics import f1_score
 # TODO: Set this as command line args
 batch_size = 32
 workers = 16 # How many cores to use to load data
-dev_mode = False # Set this to False when training on Athena
+dev_mode = True # Set this to False when training on Athena
 data_dir = "./dataset"
 snapshots_dir = "./snapshots"
 pathlib.Path(snapshots_dir).mkdir(exist_ok=True) # Create snapshot directory if it doesn't exist
@@ -117,12 +117,18 @@ for i, (input, target) in enumerate(train_loader):
     start = time.time()
     img_tensor, labels, recipe_ids = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
 
-    for j in range(int(labels.size()[0])):
-        nonzero = np.nonzero(labels[j].cpu().numpy())
-        ingredient_labels.append(nonzero)
+    current_batch_size = int(labels.size()[0])
+    label_arr = labels.cpu().numpy()
+    for j in range(current_batch_size):
+        # nonzero = np.nonzero(labels[j].cpu().numpy())
+        ingredient_labels.append(label_arr[j,:])
 
+    assert(len(recipe_ids) == current_batch_size)
     for recipe in recipe_ids:
         ingredients.append(ingredient_mapping[recipe])
+        
+    print(np.array(ingredient_labels).shape)
+    print(len(ingredients))
 
     # BIG DATA IS PROCESSED
     # Now we have a (16, 3, 224, 224) Tensor of images, and a (16, 30167) Tensor of labels
@@ -142,10 +148,12 @@ with torch.no_grad():
         #############################################################################################
         img_tensor, labels, recipe_ids = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
 
-        for j in range(int(labels.size()[0])):
+        current_batch_size = int(labels.size()[0])
+        for j in range(current_batch_size):
             nonzero = np.nonzero(labels[j].cpu().numpy())
             ingredient_labels.append(nonzero)
 
+        assert(len(recipe_ids) == current_batch_size)
         for recipe in recipe_ids:
             ingredients.append(ingredient_mapping[recipe])
 
@@ -165,10 +173,12 @@ with torch.no_grad():
         start = time.time()
         img_tensor, labels, recipe_ids = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
 
-        for j in range(int(labels.size()[0])):
+        current_batch_size = int(labels.size()[0])
+        for j in range(current_batch_size):
             nonzero = np.nonzero(labels[j].cpu().numpy())
             ingredient_labels.append(nonzero)
 
+        assert(len(recipe_ids) == current_batch_size)
         for recipe in recipe_ids:
             ingredients.append(ingredient_mapping[recipe])
 

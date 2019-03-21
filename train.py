@@ -101,7 +101,7 @@ for epochs in range(total_epochs):
     epoch_start = time.time()
     for i, (input, target) in enumerate(train_loader):
         start = time.time()
-        img_tensor, labels = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
+        img_tensor, labels, recipe_id = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
         # BIG DATA IS PROCESSED
         # Now we have a (16, 3, 224, 224) Tensor of images, and a (16, 30167) Tensor of labels
         # We can do d e e p l e a r n i n g
@@ -136,7 +136,7 @@ for epochs in range(total_epochs):
         for i, (input, target) in enumerate(val_loader):
             start = time.time()
             #############################################################################################
-            img_tensor, labels = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
+            img_tensor, labels, recipe_id = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
             img_tensor = img_tensor.to(device)
             labels = labels.to(device)
             output = torch.sigmoid(target_model(img_tensor.float())) #sigmoid values. since it's binary cross entropy.
@@ -198,7 +198,7 @@ with torch.no_grad():
     num_test_batches = len(test_loader)
     for i, (input, target) in enumerate(test_loader):
         start = time.time()
-        img_tensor, labels = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
+        img_tensor, labels, recipe_id = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
         img_tensor = img_tensor.to(device)
         labels = labels.to(device)
         ################################################

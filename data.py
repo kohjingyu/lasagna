@@ -49,4 +49,4 @@ def get_tensor_from_data(input, target, mapping, dev_mode=False):
                     mapped_idx = mapping[current_ingredient_idx]
                     labels[batch, mapped_idx] = 1
 
-    return img_tensor, labels, recipe_id
+    return img_tensor, ingredient_idx, recipe_id
