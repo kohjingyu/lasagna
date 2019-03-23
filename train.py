@@ -113,7 +113,9 @@ for epochs in range(total_epochs):
         optimiser.zero_grad()
         img_tensor = img_tensor.to(device)
         target = labels.to(device)
+        print(torch.nonzero(target))
         output = torch.sigmoid(target_model(img_tensor.float()))
+        print(torch.nonzero(output > 0.5))
         result = torch.nn.functional.binary_cross_entropy(output,target)
         storage.store_train_loss(epochs,result)
         #################################################
