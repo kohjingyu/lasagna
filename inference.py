@@ -79,7 +79,6 @@ with torch.no_grad():
     img_tensor = image_transform(im).float().unsqueeze(0).to(device)
     ################################################
     output = torch.sigmoid(target_model(img_tensor))
-    print(output)
     preds = (output > 0.5).cpu().numpy()
     time_taken = time.time() - start
     print("Ingredients", np.nonzero(preds))
