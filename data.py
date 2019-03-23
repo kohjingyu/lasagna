@@ -1,6 +1,17 @@
 import numpy as np
 import torch
 
+def get_ingredient_mapping():
+    ingredient_mapping = np.load("data/ingredient_mapping.npy")
+
+    return ingredient_mapping
+
+def get_class_weights():
+    class_weights = np.load("data/class_weights.npy")
+    class_weights /= np.min(class_weights)
+
+    return class_weights
+
 def get_class_mapping():
     """
     Returns the new class mapping by filtering out unused (or long tailed) classes

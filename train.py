@@ -5,7 +5,7 @@ from PIL import Image
 import torchvision
 import pickle
 import numpy as np
-from data import get_tensor_from_data, get_class_mapping
+from data import get_tensor_from_data, get_class_mapping, get_class_weights
 import time
 import pickle
 from data_storage_class import result_storage
@@ -28,6 +28,7 @@ momentum_mod = 0.9
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
 class_mapping = get_class_mapping()
+class_weights = torch.Tensor(get_class_weights())
 num_classes = len(class_mapping)
 total_epochs = 10
 #############################
@@ -114,7 +115,7 @@ for epochs in range(total_epochs):
         img_tensor = img_tensor.to(device)
         target = labels.to(device)
         output = torch.sigmoid(target_model(img_tensor.float()))
-        result = torch.nn.functional.binary_cross_entropy(output,target)
+        result = torch.nn.functional.binary_cross_entropy(output, target, weight=class_weights)
         storage.store_train_loss(epochs,result)
         #################################################
 

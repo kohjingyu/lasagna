@@ -2,11 +2,16 @@ import torch
 from torchvision import transforms
 from torch.utils.data.dataset import Dataset
 from PIL import Image
+
+# To avoid OSError with some images
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+
 import torchvision
 import pickle
 import numpy as np
 import time
-from data import get_class_mapping
+from data import get_class_mapping, get_ingredient_mapping
 import pickle
 import json
 import sys
@@ -29,13 +34,13 @@ def display_help():
     print("python trialScript.py <image to be categorised> <resnet / densenet> <model PATH>") #<OPTIONAL:correct labels>")
     print("It's resnet50 or densenet121 btw")
     print("Sorry")
-    
+
+
 outputdir = "./output"
 import pathlib
 pathlib.Path(outputdir).mkdir(exist_ok=True) # Create snapshot directory if it doesn't exist
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 
 # device = torch.device("cpu")
 if len(sys.argv) < 3:
@@ -43,7 +48,11 @@ if len(sys.argv) < 3:
 
 image_path = sys.argv[1]
 class_mapping = get_class_mapping()
+ingredient_mapping = get_ingredient_mapping()
+
 num_classes = len(class_mapping)
+
+
 #############################
 image_transform = transforms.Compose([
                 transforms.Scale(256),
@@ -80,8 +89,16 @@ with torch.no_grad():
     ################################################
     output = torch.sigmoid(target_model(img_tensor))
     preds = (output > 0.5).cpu().numpy()
+    preds = preds[0,:] # Because it's a batch of 1. Maybe not the best way to do it...
+    pred_idx = np.nonzero(preds)[0]
+
     time_taken = time.time() - start
-    print("Ingredients", np.nonzero(preds))
+
+    ingredients = []
+    for idx in pred_idx:
+        ingredients.append(ingredient_mapping[idx])
+
+    print("Ingredients", ingredients)
     print(f"Time Taken: {time_taken}", flush=True)
     # json.dump(preds.tolist(),open(outputdir+"/"+image_path+"_output.json","w"))
     # print("output complete")
