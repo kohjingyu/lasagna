@@ -31,7 +31,7 @@ def get_tensor_from_data(input, target, mapping, dev_mode=False):
 
     if dev_mode:
         input_arr = np.array([input[i] for i in range(input.shape[0])]) # (16, 3, 224, 224)
-        target_arr = np.zeros((target.shape[0], total_classes)) # (16, 30167)
+        target_arr = np.zeros((target.shape[0], total_classes)) # (16, 3748)
 
         # Convert to new mapping
         for i in range(target.shape[0]):

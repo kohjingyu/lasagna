@@ -22,7 +22,7 @@ if dev_mode:
     batch_size = 8
 
 use_weighted_loss = False
-num_lambda = 0.0001
+num_lambda = 0.01
 
 data_dir = "./dataset"
 snapshots_dir = "./snapshots"
@@ -132,6 +132,8 @@ for epochs in range(total_epochs):
         output = target_model(img_tensor.float())
         probs = torch.sigmoid(output)
         preds = (probs > 0.5).type(torch.FloatTensor).to(device)
+
+        print(torch.pow(torch.sum(target, dim=1) - torch.sum(preds, dim=1), 2))
 
         num_loss = torch.mean(torch.pow(torch.sum(target, dim=1) - torch.sum(preds, dim=1), 2))
 
