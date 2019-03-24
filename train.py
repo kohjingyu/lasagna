@@ -14,16 +14,17 @@ import pathlib
 from sklearn.metrics import f1_score
 
 # TODO: Set this as command line args
-batch_size = 32
+batch_size = 1
 workers = 16 # How many cores to use to load data
 dev_mode = True # Set this to False when training on Athena
+use_weighted_loss = False
 data_dir = "./dataset"
 snapshots_dir = "./snapshots"
 pathlib.Path(snapshots_dir).mkdir(exist_ok=True) # Create snapshot directory if it doesn't exist
 
 #############################
 # TOGGLES HERE
-learning_rate = 0.01
+learning_rate = 0.1
 momentum_mod = 0.9
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
@@ -90,7 +91,10 @@ target_model = torchvision.models.resnet50(pretrained=True)
 nf = target_model.fc.in_features
 target_model.fc = torch.nn.Linear(nf, num_classes)
 
-optimiser = torch.optim.SGD(target_model.parameters(), lr=learning_rate, momentum=momentum_mod)  # TOGGLES HERE.
+optimizer = torch.optim.SGD(target_model.parameters(), lr=learning_rate, momentum=momentum_mod)  # TOGGLES HERE.
+scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.999)
+criterion = torch.nn.BCELoss()
+
 target_model = target_model.to(device)
 storage = result_storage(False,batch_size,num_classes,num_batches)
 test_result = result_storage(True,batch_size,num_classes,num_batches)
@@ -100,6 +104,10 @@ best_f1 = 0
 
 for epochs in range(total_epochs):
     epoch_start = time.time()
+    target_model.train()
+    total_f1 = 0
+    total_samples = 0
+
     for i, (input, target) in enumerate(train_loader):
         start = time.time()
         img_tensor, labels, recipe_id = get_tensor_from_data(input, target, class_mapping, dev_mode=dev_mode)
@@ -110,20 +118,34 @@ for epochs in range(total_epochs):
 
         #################################################
         #TRAINING BIT
-        target_model.train() # set train mode
-        optimiser.zero_grad()
+        scheduler.step()
+        optimizer.zero_grad()
         img_tensor = img_tensor.to(device)
         target = labels.to(device)
-        output = torch.sigmoid(target_model(img_tensor.float()))
-        result = torch.nn.functional.binary_cross_entropy(output, target, weight=class_weights)
-        storage.store_train_loss(epochs,result)
+
+        output = target_model(img_tensor.float())
+        probs = torch.sigmoid(output)
+
+        preds = (probs > 0.5).cpu().numpy()
+        total_samples += preds.shape[0]
+
+        labels_arr = labels.cpu().numpy()
+        for j in range(preds.shape[0]):
+            total_f1 += f1_score(labels_arr[j,:], preds[j,:], average='macro')
+
+        if use_weighted_loss:
+            result = criterion(probs, target, weight=class_weights)
+        else:
+            result = criterion(probs, target)
+
+        # storage.store_train_loss(epochs,result)
         #################################################
 
         result.backward()
-        optimiser.step()
+        optimizer.step()
         time_taken = time.time() - start
-        print(f"Epoch {epochs}, batch {i} / {num_batches}, loss: {result.item()}, time taken: {time_taken}s", flush=True)
-    print("Total train time: {}s".format(time.time() - epoch_start))
+        print(f"Epoch {epochs}, batch {i} / {num_batches}, loss: {result.item()}, F1: {total_f1 / total_samples} lr: {scheduler.get_lr()} time taken: {time_taken}s", flush=True)
+    print(f"Average train F1: {total_f1 / total_samples}, total train time: {time.time() - epoch_start}s")
     print("="*20)
     print("Starting validation...")
 
@@ -141,7 +163,7 @@ for epochs in range(total_epochs):
             img_tensor = img_tensor.to(device)
             labels = labels.to(device)
             output = torch.sigmoid(target_model(img_tensor.float())) #sigmoid values. since it's binary cross entropy.
-            results = torch.nn.functional.binary_cross_entropy(output,labels) #calculate results.
+            results = criterion(output,labels) #calculate results.
             # answers = labels.cpu().numpy() #obtain a numpy version of answers.
 
             preds = (output > 0.5).cpu().numpy()
@@ -204,7 +226,7 @@ with torch.no_grad():
         labels = labels.to(device)
         ################################################
         output = torch.sigmoid(target_model(img_tensor.float()))
-        results = torch.nn.functional.binary_cross_entropy(output,labels)
+        results = criterion(output,labels)
 
         preds = (output > 0.5).cpu().numpy()
         labels_arr = labels.cpu().numpy()
