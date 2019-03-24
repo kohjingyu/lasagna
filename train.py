@@ -149,18 +149,21 @@ for epochs in range(total_epochs):
 
         loss += num_lambda * num_loss
 
+        num_nonzero = float(torch.sum(preds > 0)) / preds_arr.shape[0]
+
         # storage.store_train_loss(epochs,loss)
         #################################################
 
         loss.backward()
         optimizer.step()
         time_taken = time.time() - start
-        print("Epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, num_loss: {num_loss:.5f}, F1: {f1} lr: {lr:.5f} time taken: {time_taken:.3f}s".format(
+        print("Epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, num_loss: {num_loss:.5f}, num_nonzero: {num_nonzero}, F1: {f1} lr: {lr:.5f} time taken: {time_taken:.3f}s".format(
                 epochs=epochs,
                 i=i,
                 num_batches=num_batches,
                 loss=loss.item(),
                 num_loss=num_lambda * num_loss,
+                num_nonzero=num_nonzero,
                 f1=total_f1 / total_samples,
                 lr=scheduler.get_lr()[0],
                 time_taken=time_taken
