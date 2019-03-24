@@ -14,10 +14,16 @@ import pathlib
 from sklearn.metrics import f1_score
 
 # TODO: Set this as command line args
-batch_size = 1
+batch_size = 32
 workers = 16 # How many cores to use to load data
-dev_mode = True # Set this to False when training on Athena
+dev_mode = False # Set this to False when training on Athena
+
+if dev_mode:
+    batch_size = 8
+
 use_weighted_loss = False
+num_lambda = 0.01
+
 data_dir = "./dataset"
 snapshots_dir = "./snapshots"
 pathlib.Path(snapshots_dir).mkdir(exist_ok=True) # Create snapshot directory if it doesn't exist
@@ -125,26 +131,31 @@ for epochs in range(total_epochs):
 
         output = target_model(img_tensor.float())
         probs = torch.sigmoid(output)
+        preds = (probs > 0.5).type(torch.FloatTensor)
 
-        preds = (probs > 0.5).cpu().numpy()
-        total_samples += preds.shape[0]
+        num_loss = torch.mean(torch.pow(torch.sum(target, dim=1) - torch.sum(preds, dim=1), 2))
+
+        preds_arr = preds.cpu().numpy()
+        total_samples += preds_arr.shape[0]
 
         labels_arr = labels.cpu().numpy()
-        for j in range(preds.shape[0]):
-            total_f1 += f1_score(labels_arr[j,:], preds[j,:], average='macro')
+        for j in range(preds_arr.shape[0]):
+            total_f1 += f1_score(labels_arr[j,:], preds_arr[j,:], average='macro')
 
         if use_weighted_loss:
-            result = criterion(probs, target, weight=class_weights)
+            loss = criterion(probs, target, weight=class_weights)
         else:
-            result = criterion(probs, target)
+            loss = criterion(probs, target)
 
-        # storage.store_train_loss(epochs,result)
+        loss += num_lambda * num_loss
+
+        # storage.store_train_loss(epochs,loss)
         #################################################
 
-        result.backward()
+        loss.backward()
         optimizer.step()
         time_taken = time.time() - start
-        print(f"Epoch {epochs}, batch {i} / {num_batches}, loss: {result.item()}, F1: {total_f1 / total_samples} lr: {scheduler.get_lr()} time taken: {time_taken}s", flush=True)
+        print(f"Epoch {epochs}, batch {i} / {num_batches}, loss: {loss.item()}, F1: {total_f1 / total_samples} lr: {scheduler.get_lr()} time taken: {time_taken}s", flush=True)
     print(f"Average train F1: {total_f1 / total_samples}, total train time: {time.time() - epoch_start}s")
     print("="*20)
     print("Starting validation...")
@@ -163,22 +174,28 @@ for epochs in range(total_epochs):
             img_tensor = img_tensor.to(device)
             labels = labels.to(device)
             output = torch.sigmoid(target_model(img_tensor.float())) #sigmoid values. since it's binary cross entropy.
-            results = criterion(output,labels) #calculate results.
+            loss = criterion(output,labels) #calculate loss.
             # answers = labels.cpu().numpy() #obtain a numpy version of answers.
 
-            preds = (output > 0.5).cpu().numpy()
+            preds = (output > 0.5).type(torch.FloatTensor)
+
+            num_loss = torch.mean(torch.pow(torch.sum(labels, dim=1) - torch.sum(preds, dim=1), 2))
+            loss += num_lambda * num_loss
+
+            preds_arr = preds.cpu().numpy()
+
             labels_arr = labels.cpu().numpy()
-            total_samples += preds.shape[0]
+            total_samples += preds_arr.shape[0]
 
-            for j in range(preds.shape[0]):
-                total_f1 += f1_score(labels_arr[j,:], preds[j,:], average='macro')
+            for j in range(preds_arr.shape[0]):
+                total_f1 += f1_score(labels_arr[j,:], preds_arr[j,:], average='macro')
 
-            # storage.data_entry(answers,results,epochs,output)
+            # storage.data_entry(answers,loss,epochs,output)
             # again, store losses
             time_taken = time.time() - start
-            print(f"Batch {i} / {num_val_batches}, loss: {results.item()}, time taken: {time_taken}s", flush=True)
+            print(f"Batch {i} / {num_val_batches}, loss: {loss.item()}, time taken: {time_taken}s", flush=True)
             #############################################################################################                
-        # calculate accuracy
+            # calculate accuracy
         average_f1 = total_f1 / total_samples
         print(f"F1 score for this epoch: {average_f1}")
         print(f"Time taken: {time.time() - val_start}s")
@@ -201,8 +218,8 @@ for epochs in range(total_epochs):
         ###############################
         ###############################
             
-    pickle.dump(storage,open("val_loss_class.pkl","wb"))
-    pickle.dump(test_result,open("test_results.pkl","wb"))    
+    # pickle.dump(storage,open("val_loss_class.pkl","wb"))
+    # pickle.dump(test_result,open("test_loss.pkl","wb"))    
     print("Done 1 epoch. Pickles dumped again.")
     
 print("="*20)
@@ -226,16 +243,22 @@ with torch.no_grad():
         labels = labels.to(device)
         ################################################
         output = torch.sigmoid(target_model(img_tensor.float()))
-        results = criterion(output,labels)
+        loss = criterion(output,labels)
 
-        preds = (output > 0.5).cpu().numpy()
+        preds = (output > 0.5).type(torch.FloatTensor)
+
+        num_loss = torch.mean(torch.pow(torch.sum(labels, dim=1) - torch.sum(preds, dim=1), 2))
+        loss += num_lambda * num_loss
+
+        preds_arr = preds.cpu().numpy()
+
         labels_arr = labels.cpu().numpy()
-        total_samples += preds.shape[0]
-        for j in range(preds.shape[0]):
-            total_f1 += f1_score(labels_arr[j,:], preds[j,:], average='macro')
-        # test_result.data_entry(answers,results,epochs,output)
+        total_samples += preds_arr.shape[0]
+        for j in range(preds_arr.shape[0]):
+            total_f1 += f1_score(labels_arr[j,:], preds_arr[j,:], average='macro')
+        # test_result.data_entry(answers,loss,epochs,output)
         time_taken = time.time() - start
-        print(f"Test batch {i} / {num_test_batches}, time Taken: {time_taken} , test loss: {results.item()}", flush=True)
+        print(f"Test batch {i} / {num_test_batches}, time Taken: {time_taken} , test loss: {loss.item()}", flush=True)
         ################################################
     ############################################################
     # print("Test Accuracy for this epoch")
