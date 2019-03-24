@@ -155,6 +155,16 @@ for epochs in range(total_epochs):
         loss.backward()
         optimizer.step()
         time_taken = time.time() - start
+        print("Epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, num_loss: {num_loss:.5f}, F1: {f1} lr: {lr:.5f} time taken: {time_taken:.3f}s".format(
+                epochs=epochs,
+                i=i,
+                num_batches=num_batches,
+                loss=loss.item(),
+                num_loss=num_lambda * num_loss,
+                f1=total_f1 / total_samples,
+                lr=scheduler.get_lr()[0],
+                time_taken=time_taken
+            ), flush=True)
         print(f"Epoch {epochs}, batch {i} / {num_batches}, loss: {loss.item()}, F1: {total_f1 / total_samples} lr: {scheduler.get_lr()} time taken: {time_taken}s", flush=True)
     print(f"Average train F1: {total_f1 / total_samples}, total train time: {time.time() - epoch_start}s")
     print("="*20)
@@ -193,7 +203,16 @@ for epochs in range(total_epochs):
             # storage.data_entry(answers,loss,epochs,output)
             # again, store losses
             time_taken = time.time() - start
-            print(f"Batch {i} / {num_val_batches}, loss: {loss.item()}, time taken: {time_taken}s", flush=True)
+            print("Validation epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, num_loss: {num_loss:.5f}, F1: {f1}, time taken: {time_taken:.3f}s".format(
+                epochs=epochs,
+                i=i,
+                num_batches=num_val_batches,
+                loss=loss.item(),
+                num_loss=num_lambda * num_loss,
+                f1=total_f1 / total_samples,
+                time_taken=time_taken
+            ), flush=True)
+
             #############################################################################################                
             # calculate accuracy
         average_f1 = total_f1 / total_samples
@@ -258,7 +277,17 @@ with torch.no_grad():
             total_f1 += f1_score(labels_arr[j,:], preds_arr[j,:], average='macro')
         # test_result.data_entry(answers,loss,epochs,output)
         time_taken = time.time() - start
-        print(f"Test batch {i} / {num_test_batches}, time Taken: {time_taken} , test loss: {loss.item()}", flush=True)
+
+        print("Test epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, num_loss: {num_loss:.5f}, F1: {f1} time taken: {time_taken:.3f}s".format(
+            epochs=epochs,
+            i=i,
+            num_batches=num_test_batches,
+            loss=loss.item(),
+            num_loss=num_lambda * num_loss,
+            f1=total_f1 / total_samples,
+            time_taken=time_taken
+        ), flush=True)
+
         ################################################
     ############################################################
     # print("Test Accuracy for this epoch")
