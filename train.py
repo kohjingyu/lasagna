@@ -131,9 +131,11 @@ for epochs in range(total_epochs):
 
         output = target_model(img_tensor.float())
         probs = torch.sigmoid(output)
-        preds = (probs > 0.5).type(torch.FloatTensor).to(device)
+        preds = probs > 0.5
+        num_target = target.type(torch.LongTensor).to(device)
 
-        num_loss = torch.mean(torch.pow(torch.sum(target, dim=1) - torch.sum(preds, dim=1), 2))
+        num_loss = torch.mean(torch.pow(torch.sum(target, dim=1) - torch.sum(torch.round(probs), dim=1), 2))
+        assert(num_loss.requires_grad)
 
         preds_arr = preds.cpu().numpy()
         total_samples += preds_arr.shape[0]
@@ -157,7 +159,7 @@ for epochs in range(total_epochs):
         loss.backward()
         optimizer.step()
         time_taken = time.time() - start
-        print("Epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, num_loss: {num_loss:.5f}, num_nonzero: {num_nonzero}, F1: {f1} lr: {lr:.5f} time taken: {time_taken:.3f}s".format(
+        print("Epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, num_loss: {num_loss:.5f}, num_nonzero: {num_nonzero}, F1: {f1:.5f} lr: {lr:.5f} time taken: {time_taken:.3f}s".format(
                 epochs=epochs,
                 i=i,
                 num_batches=num_batches,
@@ -189,9 +191,9 @@ for epochs in range(total_epochs):
             loss = criterion(output,labels) #calculate loss.
             # answers = labels.cpu().numpy() #obtain a numpy version of answers.
 
-            preds = (output > 0.5).type(torch.FloatTensor).to(device)
+            preds = output > 0.5
 
-            num_loss = torch.mean(torch.pow(torch.sum(labels, dim=1) - torch.sum(preds, dim=1), 2))
+            num_loss = torch.mean(torch.pow(torch.sum(labels, dim=1) - torch.sum(probs, dim=1), 2))
             loss += num_lambda * num_loss
 
             preds_arr = preds.cpu().numpy()
@@ -266,7 +268,7 @@ with torch.no_grad():
         output = torch.sigmoid(target_model(img_tensor.float()))
         loss = criterion(output,labels)
 
-        preds = (output > 0.5).type(torch.FloatTensor).to(device)
+        preds = (output > 0.5)
 
         num_loss = torch.mean(torch.pow(torch.sum(labels, dim=1) - torch.sum(preds, dim=1), 2))
         loss += num_lambda * num_loss
