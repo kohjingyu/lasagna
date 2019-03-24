@@ -133,8 +133,6 @@ for epochs in range(total_epochs):
         probs = torch.sigmoid(output)
         preds = (probs > 0.5).type(torch.FloatTensor).to(device)
 
-        print(torch.pow(torch.sum(target, dim=1) - torch.sum(preds, dim=1), 2))
-
         num_loss = torch.mean(torch.pow(torch.sum(target, dim=1) - torch.sum(preds, dim=1), 2))
 
         preds_arr = preds.cpu().numpy()
@@ -170,7 +168,6 @@ for epochs in range(total_epochs):
                 lr=scheduler.get_lr()[0],
                 time_taken=time_taken
             ), flush=True)
-        print(f"Epoch {epochs}, batch {i} / {num_batches}, loss: {loss.item()}, F1: {total_f1 / total_samples} lr: {scheduler.get_lr()} time taken: {time_taken}s", flush=True)
     print(f"Average train F1: {total_f1 / total_samples}, total train time: {time.time() - epoch_start}s")
     print("="*20)
     print("Starting validation...")
