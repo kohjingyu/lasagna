@@ -1,43 +1,73 @@
 import torch
+import torchvision
 from torchvision import transforms
 from torch.utils.data.dataset import Dataset
+
 from PIL import Image
-import torchvision
 import pickle
 import numpy as np
-from data import get_tensor_from_data, get_class_mapping, get_class_weights
+
 import time
-import pickle
-from data_storage_class import result_storage
 import pathlib
+import argparse
+
+from data import get_tensor_from_data, get_class_mapping, get_class_weights
+from data_storage_class import result_storage
 
 from sklearn.metrics import f1_score
 
-# TODO: Set this as command line args
-batch_size = 32
-workers = 16 # How many cores to use to load data
-dev_mode = False # Set this to False when training on Athena
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('--batch_size', metavar='batch_size', type=int, default=32,
+                   help='batch size for training')
+parser.add_argument('--num_epochs', metavar='num_epochs', type=int, default=10,
+                   help='number of train epochs')
+parser.add_argument('--max_stagnation', metavar='max_stagnation', type=int, default=3,
+                   help='number of validation epochs that do not improve to consider before early stopping')
+parser.add_argument('--lr', metavar='lr', type=float, default=0.1,
+                   help='base learning rate')
+parser.add_argument('--momentum', metavar='momentum', type=float, default=0.9,
+                   help='momentum for SGD')
+parser.add_argument('--workers', metavar='workers', type=int, default=16,
+                   help='number of cores to use for data loading')
+parser.add_argument('--pos_weight', metavar='pos_weight', type=int, default=16,
+                   help='weight for positive label in BCELoss')
+parser.add_argument('--dev_mode', metavar='dev_mode', type=bool, default=False,
+                   help='whether to run in development mode')
+parser.add_argument('--data_dir', metavar='data_dir', type=str, default="./dataset",
+                   help='root directory containing train / val / test data')
+parser.add_argument('--snapshots_dir', metavar='snapshots_dir', type=str, default="./snapshots",
+                   help='root directory to store model states')
+
+args = parser.parse_args()
+print(args)
+
+#############################
+# Load hyperparameters
+
+batch_size = args.batch_size
+workers = args.workers # How many cores to use to load data
+dev_mode = args.dev_mode # Set this to False when training on Athena
 
 if dev_mode:
     batch_size = 8
 
-pos_weight = 2
-num_lambda = 0.01
+pos_weight = args.pos_weight
 
-data_dir = "./dataset"
-snapshots_dir = "./snapshots"
+data_dir = args.data_dir
+snapshots_dir = args.snapshots_dir
 pathlib.Path(snapshots_dir).mkdir(exist_ok=True) # Create snapshot directory if it doesn't exist
 
-#############################
-# TOGGLES HERE
-learning_rate = 0.1
-momentum_mod = 0.9
+learning_rate = args.lr
+momentum_mod = args.momentum
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
 class_mapping = get_class_mapping()
 # class_weights = torch.Tensor(get_class_weights()).to(device)
 num_classes = len(class_mapping)
-total_epochs = 10
+total_epochs = args.num_epochs
+max_stagnation = args.max_stagnation
+
+model_name = f"best_resnet50_b{batch_size}_posw{pos_weight}_lr{learning_rate}_stag{max_stagnation}_epochs{total_epochs}.pth"
 #############################
 
 def calc_loss(probs, target, weight=1):
@@ -115,6 +145,7 @@ test_result = result_storage(True,batch_size,num_classes,num_batches)
 ###########################################################
 
 best_f1 = 0
+stagnating_epochs = 0 # Incremented when validation F1 score does not increase
 
 for epochs in range(total_epochs):
     epoch_start = time.time()
@@ -222,7 +253,8 @@ for epochs in range(total_epochs):
             #############################################################################################                
             # calculate accuracy
         average_f1 = total_f1 / total_samples
-        print(f"F1 score for this epoch: {average_f1}")
+        print("=" * 20)
+        print(f"Validation F1 score for this epoch: {average_f1}")
         print(f"Time taken: {time.time() - val_start}s")
         # print("Validation Accuracy for this epoch")
         # storage.accuracy_calculation_epoch(epochs) #calculate accuracies.
@@ -232,25 +264,24 @@ for epochs in range(total_epochs):
 
         # Save best performing model
         if average_f1 > best_f1:
+            print("New best model!")
             best_f1 = average_f1
-            torch.save(target_model.state_dict(), f'{snapshots_dir}/best_resnet50.pth')
+            torch.save(target_model.state_dict(), f'{snapshots_dir}/{model_name}')
+            stagnating_epochs = 0
+        else:
+            stagnating_epochs += 1
+            print(f"Did not improve. Stagnation: {stagnating_epochs}/{max_stagnation}")
 
         ###############################
+        # Early stop if required. 
+        if stagnating_epochs >= max_stagnation:
+            break
         ###############################
-        ###############################
-        # TODO: Early stop if required. 
-        ###############################
-        ###############################
-        ###############################
-            
-    # pickle.dump(storage,open("val_loss_class.pkl","wb"))
-    # pickle.dump(test_result,open("test_loss.pkl","wb"))    
-    print("Done 1 epoch. Pickles dumped again.")
-    
+
 print("="*20)
 print("Starting test...")
 print("Loading best model...")
-saved_state_dict = torch.load(f"{snapshots_dir}/best_resnet50.pth", map_location='cpu')
+saved_state_dict = torch.load(f"{snapshots_dir}/{model_name}", map_location='cpu')
 target_model.load_state_dict(saved_state_dict, strict=False)
 
 correct =0
@@ -302,7 +333,9 @@ with torch.no_grad():
     #     print("Threshold of {} :  {}".format(threshold_value,latest[threshold_value]))
     ############################################################
     average_f1 = total_f1 / total_samples
-    print(f"F1 score for this epoch: {average_f1}")
+    print("=" * 20)
+    print(f"Best validation F1 score: {best_f1}")
+    print(f"Test F1 score: {average_f1}")
     print(f"Time taken: {time.time() - test_start}s")
 
 print("Done")
