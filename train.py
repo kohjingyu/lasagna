@@ -153,8 +153,6 @@ for epochs in range(total_epochs):
         else:
             loss = calc_loss(probs, target)
 
-        print(loss)
-
         num_nonzero = float(torch.sum(preds > 0)) / preds_arr.shape[0]
 
         # storage.store_train_loss(epochs,loss)
