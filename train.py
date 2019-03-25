@@ -29,7 +29,7 @@ parser.add_argument('--momentum', metavar='momentum', type=float, default=0.9,
                    help='momentum for SGD')
 parser.add_argument('--workers', metavar='workers', type=int, default=16,
                    help='number of cores to use for data loading')
-parser.add_argument('--pos_weight', metavar='pos_weight', type=int, default=16,
+parser.add_argument('--pos_weight', metavar='pos_weight', type=int, default=10,
                    help='weight for positive label in BCELoss')
 parser.add_argument('--dev_mode', metavar='dev_mode', type=bool, default=False,
                    help='whether to run in development mode')
@@ -176,8 +176,8 @@ for epochs in range(total_epochs):
         total_samples += preds_arr.shape[0]
 
         labels_arr = labels.cpu().numpy()
-        for j in range(preds_arr.shape[0]):
-            total_f1 += f1_score(labels_arr[j,:], preds_arr[j,:], average='macro')
+        # for j in range(preds_arr.shape[0]):
+        #     total_f1 += f1_score(labels_arr[j,:], preds_arr[j,:], average='macro')
 
         if pos_weight != 1:
             loss = calc_loss(probs, target, weight=pos_weight)
