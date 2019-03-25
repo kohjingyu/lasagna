@@ -21,7 +21,7 @@ dev_mode = False # Set this to False when training on Athena
 if dev_mode:
     batch_size = 8
 
-use_weighted_loss = False
+pos_weight = 2
 num_lambda = 0.01
 
 data_dir = "./dataset"
@@ -35,10 +35,18 @@ momentum_mod = 0.9
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
 class_mapping = get_class_mapping()
-class_weights = torch.Tensor(get_class_weights()).to(device)
+# class_weights = torch.Tensor(get_class_weights()).to(device)
 num_classes = len(class_mapping)
 total_epochs = 10
 #############################
+
+def calc_loss(probs, target, weight=1):
+    """
+    probs (torch.Tensor): Size (N x C) containing probability for each class to be classified
+    target (torch.Tensor): Size (N x C) containing 1 if a class is present and 0 otherwise
+    weight (float, optional): The weight to assign to the cost of a positive error relative to a negative error
+    """
+    return (weight * -target * torch.log(probs) - (1 - target) * torch.log(1 - probs)).mean()
 
 if dev_mode:
     # Load from .npy file and batch manually
@@ -99,7 +107,7 @@ target_model.fc = torch.nn.Linear(nf, num_classes)
 
 optimizer = torch.optim.SGD(target_model.parameters(), lr=learning_rate, momentum=momentum_mod)  # TOGGLES HERE.
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.999)
-criterion = torch.nn.BCELoss()
+# criterion = torch.nn.BCELoss()
 
 target_model = target_model.to(device)
 storage = result_storage(False,batch_size,num_classes,num_batches)
@@ -132,10 +140,6 @@ for epochs in range(total_epochs):
         output = target_model(img_tensor.float())
         probs = torch.sigmoid(output)
         preds = probs > 0.5
-        num_target = target.type(torch.LongTensor).to(device)
-
-        num_loss = torch.mean(torch.pow(torch.sum(target, dim=1) - torch.sum(torch.round(probs), dim=1), 2))
-        assert(num_loss.requires_grad)
 
         preds_arr = preds.cpu().numpy()
         total_samples += preds_arr.shape[0]
@@ -144,12 +148,12 @@ for epochs in range(total_epochs):
         for j in range(preds_arr.shape[0]):
             total_f1 += f1_score(labels_arr[j,:], preds_arr[j,:], average='macro')
 
-        if use_weighted_loss:
-            loss = criterion(probs, target, weight=class_weights)
+        if pos_weight != 1:
+            loss = calc_loss(probs, target, weight=pos_weight)
         else:
-            loss = criterion(probs, target)
+            loss = calc_loss(probs, target)
 
-        loss += num_lambda * num_loss
+        print(loss)
 
         num_nonzero = float(torch.sum(preds > 0)) / preds_arr.shape[0]
 
@@ -159,12 +163,11 @@ for epochs in range(total_epochs):
         loss.backward()
         optimizer.step()
         time_taken = time.time() - start
-        print("Epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, num_loss: {num_loss:.5f}, num_nonzero: {num_nonzero}, F1: {f1:.5f} lr: {lr:.5f} time taken: {time_taken:.3f}s".format(
+        print("Epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, num_nonzero: {num_nonzero}, F1: {f1:.5f} lr: {lr:.5f} time taken: {time_taken:.3f}s".format(
                 epochs=epochs,
                 i=i,
                 num_batches=num_batches,
                 loss=loss.item(),
-                num_loss=num_lambda * num_loss,
                 num_nonzero=num_nonzero,
                 f1=total_f1 / total_samples,
                 lr=scheduler.get_lr()[0],
@@ -188,13 +191,15 @@ for epochs in range(total_epochs):
             img_tensor = img_tensor.to(device)
             labels = labels.to(device)
             output = torch.sigmoid(target_model(img_tensor.float())) #sigmoid values. since it's binary cross entropy.
-            loss = criterion(output,labels) #calculate loss.
+
+            if pos_weight != 1:
+                loss = calc_loss(output, labels, weight=pos_weight)
+            else:
+                loss = calc_loss(output, labels)
+
             # answers = labels.cpu().numpy() #obtain a numpy version of answers.
 
             preds = output > 0.5
-
-            num_loss = torch.mean(torch.pow(torch.sum(labels, dim=1) - torch.sum(probs, dim=1), 2))
-            loss += num_lambda * num_loss
 
             preds_arr = preds.cpu().numpy()
 
@@ -207,12 +212,11 @@ for epochs in range(total_epochs):
             # storage.data_entry(answers,loss,epochs,output)
             # again, store losses
             time_taken = time.time() - start
-            print("Validation epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, num_loss: {num_loss:.5f}, F1: {f1}, time taken: {time_taken:.3f}s".format(
+            print("Validation epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, F1: {f1}, time taken: {time_taken:.3f}s".format(
                 epochs=epochs,
                 i=i,
                 num_batches=num_val_batches,
                 loss=loss.item(),
-                num_loss=num_lambda * num_loss,
                 f1=total_f1 / total_samples,
                 time_taken=time_taken
             ), flush=True)
@@ -266,13 +270,13 @@ with torch.no_grad():
         labels = labels.to(device)
         ################################################
         output = torch.sigmoid(target_model(img_tensor.float()))
-        loss = criterion(output,labels)
+
+        if pos_weight != 1:
+            loss = calc_loss(output, labels, weight=pos_weight)
+        else:
+            loss = calc_loss(output, labels)
 
         preds = (output > 0.5)
-
-        num_loss = torch.mean(torch.pow(torch.sum(labels, dim=1) - torch.sum(preds, dim=1), 2))
-        loss += num_lambda * num_loss
-
         preds_arr = preds.cpu().numpy()
 
         labels_arr = labels.cpu().numpy()
@@ -282,12 +286,11 @@ with torch.no_grad():
         # test_result.data_entry(answers,loss,epochs,output)
         time_taken = time.time() - start
 
-        print("Test epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, num_loss: {num_loss:.5f}, F1: {f1} time taken: {time_taken:.3f}s".format(
+        print("Test epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, F1: {f1} time taken: {time_taken:.3f}s".format(
             epochs=epochs,
             i=i,
             num_batches=num_test_batches,
             loss=loss.item(),
-            num_loss=num_lambda * num_loss,
             f1=total_f1 / total_samples,
             time_taken=time_taken
         ), flush=True)
