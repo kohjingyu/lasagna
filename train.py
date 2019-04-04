@@ -37,6 +37,8 @@ parser.add_argument('--data_dir', metavar='data_dir', type=str, default="./datas
                    help='root directory containing train / val / test data')
 parser.add_argument('--snapshots_dir', metavar='snapshots_dir', type=str, default="./snapshots",
                    help='root directory to store model states')
+parser.add_argument('--model', metavar='model_name', type=str, default="resnet",
+                   help='model to use [resnet / densenet]')
 
 args = parser.parse_args()
 print(args)
@@ -67,7 +69,7 @@ num_classes = len(class_mapping)
 total_epochs = args.num_epochs
 max_stagnation = args.max_stagnation
 
-model_name = f"best_densenet161_b{batch_size}_posw{pos_weight}_lr{learning_rate}_stag{max_stagnation}_epochs{total_epochs}.pth"
+model_name = f"best_{args.model_name}_b{batch_size}_posw{pos_weight}_lr{learning_rate}_stag{max_stagnation}_epochs{total_epochs}.pth"
 #############################
 
 def calc_loss(probs, target, weight=1):
@@ -131,10 +133,15 @@ else:
 num_batches = len(train_loader) # now we can get your batches since dataset is chosen
 
 #initialise your model here
-target_model = torchvision.models.densenet161(pretrained=True)
-# target_model = torchvision.models.resnet50(pretrained=True)
-nf = target_model.fc.in_features
-target_model.fc = torch.nn.Linear(nf, num_classes)
+
+if args.model_name == "resnet":
+    target_model = torchvision.models.resnet50(pretrained=True)
+    nf = target_model.fc.in_features
+    target_model.fc = torch.nn.Linear(nf, num_classes)
+else:
+    target_model = torchvision.models.densenet161(pretrained=True)
+    nf = target_model.classifier.in_features
+    target_model.classifier = torch.nn.Linear(nf, num_classes)
 
 optimizer = torch.optim.SGD(target_model.parameters(), lr=learning_rate, momentum=momentum_mod)  # TOGGLES HERE.
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.999)
