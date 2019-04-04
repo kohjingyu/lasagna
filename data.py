@@ -18,6 +18,10 @@ def get_class_mapping():
     """
 
     label_counts = np.load("data/label_count.npy")
+    label_counts[1] = 1 # Ignore the rubbish label
+    top_k = 1500 # Only use top k labels
+
+    label_counts[np.argsort(-label_counts)[top_k:]] = 0
     nonzero_idx = np.nonzero(label_counts)[0]
 
     mapping = {}

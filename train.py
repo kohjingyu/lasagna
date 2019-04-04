@@ -66,6 +66,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class_mapping = get_class_mapping()
 # class_weights = torch.Tensor(get_class_weights()).to(device)
 num_classes = len(class_mapping)
+print("Num classes:", num_classes)
 total_epochs = args.num_epochs
 max_stagnation = args.max_stagnation
 
