@@ -67,7 +67,7 @@ num_classes = len(class_mapping)
 total_epochs = args.num_epochs
 max_stagnation = args.max_stagnation
 
-model_name = f"best_resnet50_b{batch_size}_posw{pos_weight}_lr{learning_rate}_stag{max_stagnation}_epochs{total_epochs}.pth"
+model_name = f"best_densenet161_b{batch_size}_posw{pos_weight}_lr{learning_rate}_stag{max_stagnation}_epochs{total_epochs}.pth"
 #############################
 
 def calc_loss(probs, target, weight=1):
@@ -131,7 +131,8 @@ else:
 num_batches = len(train_loader) # now we can get your batches since dataset is chosen
 
 #initialise your model here
-target_model = torchvision.models.resnet50(pretrained=True)
+target_model = torchvision.models.densenet161(pretrained=True)
+# target_model = torchvision.models.resnet50(pretrained=True)
 nf = target_model.fc.in_features
 target_model.fc = torch.nn.Linear(nf, num_classes)
 
