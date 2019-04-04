@@ -37,7 +37,7 @@ parser.add_argument('--data_dir', metavar='data_dir', type=str, default="./datas
                    help='root directory containing train / val / test data')
 parser.add_argument('--snapshots_dir', metavar='snapshots_dir', type=str, default="./snapshots",
                    help='root directory to store model states')
-parser.add_argument('--model', metavar='model_name', type=str, default="resnet",
+parser.add_argument('--model_name', metavar='model_name', type=str, default="resnet",
                    help='model to use [resnet / densenet]')
 
 args = parser.parse_args()
