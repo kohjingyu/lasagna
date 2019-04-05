@@ -31,6 +31,8 @@ parser.add_argument('--workers', metavar='workers', type=int, default=16,
                    help='number of cores to use for data loading')
 parser.add_argument('--pos_weight', metavar='pos_weight', type=int, default=10,
                    help='weight for positive label in BCELoss')
+parser.add_argument('--use_class_weights', metavar='use_class_weights', type=bool, default=False,
+                   help='whether to weight to account for class imbalance')
 parser.add_argument('--dev_mode', metavar='dev_mode', type=bool, default=False,
                    help='whether to run in development mode')
 parser.add_argument('--data_dir', metavar='data_dir', type=str, default="./dataset",
@@ -63,8 +65,14 @@ learning_rate = args.lr
 momentum_mod = args.momentum
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
-class_mapping = get_class_mapping()
-# class_weights = torch.Tensor(get_class_weights()).to(device)
+class_mapping, class_weights = get_class_mapping()
+use_class_weights = args.use_class_weights
+
+if not use_class_weights:
+    class_weights = torch.ones(class_weights.shape).to(device)
+else:
+    class_weights = torch.Tensor(class_weights).to(device)
+
 num_classes = len(class_mapping)
 print("Num classes:", num_classes)
 total_epochs = args.num_epochs
@@ -73,13 +81,13 @@ max_stagnation = args.max_stagnation
 model_name = f"best_{args.model_name}_b{batch_size}_posw{pos_weight}_lr{learning_rate}_stag{max_stagnation}_epochs{total_epochs}.pth"
 #############################
 
-def calc_loss(probs, target, weight=1):
+def calc_loss(probs, target, pos_weight=1):
     """
     probs (torch.Tensor): Size (N x C) containing probability for each class to be classified
     target (torch.Tensor): Size (N x C) containing 1 if a class is present and 0 otherwise
-    weight (float, optional): The weight to assign to the cost of a positive error relative to a negative error
+    pos_weight (float, optional): The weight to assign to the cost of a positive error relative to a negative error
     """
-    return (weight * -target * torch.log(probs) - (1 - target) * torch.log(1 - probs)).mean()
+    return (class_weights * pos_weight * -target * torch.log(probs) - (1 - target) * class_weights * torch.log(1 - probs)).mean()
 
 if dev_mode:
     # Load from .npy file and batch manually
@@ -189,7 +197,7 @@ for epochs in range(total_epochs):
             total_f1 += f1_score(labels_arr[j,:], preds_arr[j,:], average='macro')
 
         if pos_weight != 1:
-            loss = calc_loss(probs, target, weight=pos_weight)
+            loss = calc_loss(probs, target, pos_weight=pos_weight)
         else:
             loss = calc_loss(probs, target)
 
@@ -231,7 +239,7 @@ for epochs in range(total_epochs):
             output = torch.sigmoid(target_model(img_tensor.float())) #sigmoid values. since it's binary cross entropy.
 
             if pos_weight != 1:
-                loss = calc_loss(output, labels, weight=pos_weight)
+                loss = calc_loss(output, labels, pos_weight=pos_weight)
             else:
                 loss = calc_loss(output, labels)
 
@@ -310,7 +318,7 @@ with torch.no_grad():
         output = torch.sigmoid(target_model(img_tensor.float()))
 
         if pos_weight != 1:
-            loss = calc_loss(output, labels, weight=pos_weight)
+            loss = calc_loss(output, labels, pos_weight=pos_weight)
         else:
             loss = calc_loss(output, labels)
 

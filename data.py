@@ -25,10 +25,16 @@ def get_class_mapping():
     nonzero_idx = np.nonzero(label_counts)[0]
 
     mapping = {}
+    counts = []
+
     for idx in nonzero_idx:
         mapping[idx] = len(mapping)
+        counts.append(label_counts[idx])
 
-    return mapping
+    weights = 1 / np.array(counts)
+    weights /= np.min(weights)
+
+    return mapping, weights
 
 def get_tensor_from_data(input, target, mapping, dev_mode=False):
     total_classes = len(mapping)
