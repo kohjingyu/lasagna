@@ -32,7 +32,7 @@ def get_class_mapping():
         counts.append(label_counts[idx])
 
     weights = 1 / np.array(counts)
-    weights /= np.min(weights)
+    weights /= np.max(weights)
 
     return mapping, weights
 
