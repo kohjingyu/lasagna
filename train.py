@@ -185,8 +185,8 @@ for epochs in range(total_epochs):
         total_samples += preds_arr.shape[0]
 
         labels_arr = labels.cpu().numpy()
-        # for j in range(preds_arr.shape[0]):
-        #     total_f1 += f1_score(labels_arr[j,:], preds_arr[j,:], average='macro')
+        for j in range(preds_arr.shape[0]):
+            total_f1 += f1_score(labels_arr[j,:], preds_arr[j,:], average='macro')
 
         if pos_weight != 1:
             loss = calc_loss(probs, target, weight=pos_weight)
