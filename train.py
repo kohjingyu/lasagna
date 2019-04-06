@@ -155,7 +155,7 @@ else:
     target_model.classifier = torch.nn.Linear(nf, num_classes)
 
 if args.adam:
-    optimizer = torch.optim.adam(target_model.parameters())
+    optimizer = torch.optim.Adam(target_model.parameters())
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=1)
 else:
     optimizer = torch.optim.SGD(target_model.parameters(), lr=learning_rate, momentum=momentum_mod)
