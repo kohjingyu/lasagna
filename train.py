@@ -27,6 +27,8 @@ parser.add_argument('--lr', metavar='lr', type=float, default=0.1,
                    help='base learning rate')
 parser.add_argument('--momentum', metavar='momentum', type=float, default=0.9,
                    help='momentum for SGD')
+parser.add_argument('--adam', metavar='adam', type=bool, default=False,
+                   help='whether to use Adam as the optimization algorithm')
 parser.add_argument('--workers', metavar='workers', type=int, default=16,
                    help='number of cores to use for data loading')
 parser.add_argument('--pos_weight', metavar='pos_weight', type=int, default=10,
@@ -152,8 +154,13 @@ else:
     nf = target_model.classifier.in_features
     target_model.classifier = torch.nn.Linear(nf, num_classes)
 
-optimizer = torch.optim.SGD(target_model.parameters(), lr=learning_rate, momentum=momentum_mod)  # TOGGLES HERE.
-scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.999)
+if args.adam:
+    optimizer = torch.optim.adam(target_model.parameters())
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=1)
+else:
+    optimizer = torch.optim.SGD(target_model.parameters(), lr=learning_rate, momentum=momentum_mod)
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.999)
+
 # criterion = torch.nn.BCELoss()
 
 target_model = target_model.to(device)
