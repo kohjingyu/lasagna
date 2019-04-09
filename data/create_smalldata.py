@@ -64,6 +64,7 @@ for i, (input, target) in enumerate(train_loader):
     for batch in range(current_batch_size):
         for j in range(num_ingredients):
             labels[batch, int(ingredient_idx[batch, j])] = 1
+        
         data.append([img_tensor[batch,:].numpy(), labels[batch, :].numpy()])
         assert(data[-1][0].shape == data[0][0].shape)
         assert(data[-1][1].shape == data[0][1].shape)

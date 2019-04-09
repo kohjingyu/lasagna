@@ -52,13 +52,6 @@ class ImagerLoader(data.Dataset):
 
     def __getitem__(self, index):
         recipId = self.ids[index]
-        # we force 80 percent of them to be a mismatch
-        if self.partition == 'train':
-            match = np.random.uniform() > self.mismtch
-        elif self.partition == 'val' or self.partition == 'test':
-            match = True
-        else:
-            raise 'Partition name not well defined'
 
         target = 1 #match and 1 or -1
 
@@ -99,7 +92,7 @@ class ImagerLoader(data.Dataset):
 
             path = self.imgPath + rndimgs[imgIdx]['id']
 
-            # instructions
+        # instructions
         instrs = sample['intrs']
         itr_ln = len(instrs)
         t_inst = np.zeros((self.maxInst, np.shape(instrs)[1]), dtype=np.float32)
@@ -134,14 +127,14 @@ class ImagerLoader(data.Dataset):
         # output
         if self.partition == 'train':
             if self.semantic_reg:
-                return [img, instrs, itr_ln, ingrs, igr_ln], [target, img_class, rec_class]
+                return [img, instrs, itr_ln, ingrs, igr_ln, recipId], [target, img_class, rec_class]
             else:
-                return [img, instrs, itr_ln, ingrs, igr_ln], [target]
+                return [img, instrs, itr_ln, ingrs, igr_ln, recipId], [target]
         else:
             if self.semantic_reg:
-                return [img, instrs, itr_ln, ingrs, igr_ln], [target, img_class, rec_class, img_id, rec_id]
+                return [img, instrs, itr_ln, ingrs, igr_ln, recipId], [target, img_class, rec_class, img_id, rec_id]
             else:
-                return [img, instrs, itr_ln, ingrs, igr_ln], [target, img_id, rec_id]
+                return [img, instrs, itr_ln, ingrs, igr_ln, recipId], [target, img_id, rec_id]
 
     def __len__(self):
         return len(self.ids)
@@ -197,7 +190,7 @@ class PreviewLoader(data.Dataset):
         loader_path = os.path.join(*loader_path)
         path = os.path.join(self.imgPath, self.partition, loader_path, imgs[imgIdx]['id'])
 
-            # instructions
+        # instructions
         instrs = sample['intrs']
         itr_ln = len(instrs)
         t_inst = np.zeros((self.maxInst, np.shape(instrs)[1]), dtype=np.float32)
