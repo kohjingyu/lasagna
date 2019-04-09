@@ -41,8 +41,8 @@ parser.add_argument('--data_dir', metavar='data_dir', type=str, default="./datas
                    help='root directory containing train / val / test data')
 parser.add_argument('--snapshots_dir', metavar='snapshots_dir', type=str, default="./snapshots",
                    help='root directory to store model states')
-parser.add_argument('--model_name', metavar='model_name', type=str, default="resnet",
-                   help='model to use [resnet / densenet]')
+parser.add_argument('--model_name', metavar='model_name', type=str, default="resnet50",
+                   help='model to use [resnet50 / resnet152 / densenet161]')
 
 args = parser.parse_args()
 print(args)
@@ -144,8 +144,12 @@ else:
 num_batches = len(train_loader) # now we can get your batches since dataset is chosen
 
 #initialise your model here
-if args.model_name == "resnet":
+if args.model_name == "resnet50":
     target_model = torchvision.models.resnet50(pretrained=True)
+    nf = target_model.fc.in_features
+    target_model.fc = torch.nn.Linear(nf, num_classes)
+elif args.model_name == "resnet152":
+    target_model = torchvision.models.resnet152(pretrained=True)
     nf = target_model.fc.in_features
     target_model.fc = torch.nn.Linear(nf, num_classes)
 else:
