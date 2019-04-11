@@ -2,6 +2,7 @@ import torch
 import torchvision
 from torchvision import transforms
 from torch.utils.data.dataset import Dataset
+import resnet
 
 from PIL import Image
 import pickle
@@ -145,11 +146,11 @@ num_batches = len(train_loader) # now we can get your batches since dataset is c
 
 #initialise your model here
 if args.model_name == "resnet50":
-    target_model = torchvision.models.resnet50(pretrained=True)
+    target_model = resnet.resnet50(pretrained=True)
     nf = target_model.fc.in_features
     target_model.fc = torch.nn.Linear(nf, num_classes)
 elif args.model_name == "resnet152":
-    target_model = torchvision.models.resnet152(pretrained=True)
+    target_model = resnet.resnet152(pretrained=True)
     nf = target_model.fc.in_features
     target_model.fc = torch.nn.Linear(nf, num_classes)
 else:
