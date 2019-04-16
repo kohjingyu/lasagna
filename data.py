@@ -19,9 +19,9 @@ def get_class_mapping():
 
     label_counts = np.load("data/label_count.npy")
     label_counts[1] = 1 # Ignore the rubbish label
-    top_k = 1500 # Only use top k labels
+#    top_k = 1500 # Only use top k labels
 
-    label_counts[np.argsort(-label_counts)[top_k:]] = 0
+#    label_counts[np.argsort(-label_counts)[top_k:]] = 0
     nonzero_idx = np.nonzero(label_counts)[0]
 
     mapping = {}
@@ -36,7 +36,7 @@ def get_class_mapping():
 
     return mapping, weights
 
-def get_tensor_from_data(input, target, mapping, dev_mode=False):
+def get_tensor_from_data(input, target, mapping, recipe_quantity_mapping, dev_mode=False):
     total_classes = len(mapping)
 
     if dev_mode:
@@ -63,6 +63,7 @@ def get_tensor_from_data(input, target, mapping, dev_mode=False):
 
         # Create one-hot vectors (multilabel binarization - ingredients present will have 1 at their indices)
         labels = torch.zeros((current_batch_size, total_classes))
+        labels2 = torch.zeros((current_batch_size, total_classes))
 
         for batch in range(current_batch_size):
             for j in range(int(num_ingredients[batch])):
@@ -70,5 +71,8 @@ def get_tensor_from_data(input, target, mapping, dev_mode=False):
                 if current_ingredient_idx in mapping and current_ingredient_idx > 1:
                     mapped_idx = mapping[current_ingredient_idx]
                     labels[batch, mapped_idx] = 1
-
-    return img_tensor, labels, recipe_id
+            riqm = recipe_quantity_mapping[recipe_id[batch]]
+            nonzero_riqm = riqm[0]
+            labels2[batch,nonzero_riqm] = torch.FloatTensor(riqm[1])
+        labels2 = labels2*labels
+    return img_tensor, labels, labels2, recipe_id
