@@ -180,6 +180,7 @@ class ResNet(nn.Module):
         # Performing masking
         zeros = torch.zeros(output2.size()).cuda()
         output2 = torch.where(output > 0.5, output2, zeros)
+        output2 = torch.pow(output2, 2) # Element-wise square
         assert(torch.all(torch.nonzero(output2) == torch.nonzero(output > 0.5)))
 
         return output, output2
