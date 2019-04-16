@@ -6,3 +6,4 @@ data/*.npy
 snapshots/
 *.pth
 venv/
+calorie/
