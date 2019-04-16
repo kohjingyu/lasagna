@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
-
+import torch
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
            'resnet152', 'resnext50_32x4d', 'resnext101_32x8d']
@@ -123,7 +123,8 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, planes[2], layers[2], stride=2, groups=groups, norm_layer=norm_layer)
         self.layer4 = self._make_layer(block, planes[3], layers[3], stride=2, groups=groups, norm_layer=norm_layer)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(planes[3] * block.expansion, num_classes)
+        self.fc = nn.Linear(planes[3] * block.expansion, 1000) # TODO:  Change to use num_classes and fix load_state_dict
+        self.fc_regression = nn.Linear(planes[3] * block.expansion, num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -173,9 +174,15 @@ class ResNet(nn.Module):
 
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = self.fc(x)
 
-        return x
+        output = self.fc(x)
+        output2 = self.fc_regression(x)
+        # Performing masking
+        zeros = torch.zeros(output2.size()).cuda()
+        output2 = torch.where(output > 0.5, output2, zeros)
+        assert(torch.all(torch.nonzero(output2) == torch.nonzero(output > 0.5)))
+
+        return output, output2
 
 
 def resnet18(pretrained=False, **kwargs):
@@ -186,7 +193,7 @@ def resnet18(pretrained=False, **kwargs):
     """
     model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']), strict=False)
     return model
 
 
@@ -198,7 +205,7 @@ def resnet34(pretrained=False, **kwargs):
     """
     model = ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet34']))
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet34']), strict=False)
     return model
 
 
@@ -210,7 +217,7 @@ def resnet50(pretrained=False, **kwargs):
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet50']))
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet50']), strict=False)
     return model
 
 
@@ -222,7 +229,7 @@ def resnet101(pretrained=False, **kwargs):
     """
     model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet101']))
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet101']), strict=False)
     return model
 
 
@@ -234,7 +241,7 @@ def resnet152(pretrained=False, **kwargs):
     """
     model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet152']))
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet152']), strict=False)
     return model
 
 
