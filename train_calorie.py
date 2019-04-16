@@ -204,7 +204,7 @@ for epochs in range(total_epochs):
         probs = torch.sigmoid(output)
         preds = probs > 0.5
 	
-        loss_fn = torch.nn.MSELoss(reduction='elementwise_mean')
+        loss_fn = torch.nn.L1Loss()
         loss2 = loss_fn(output2,target2)
 
         preds_arr = preds.cpu().numpy()
@@ -245,7 +245,7 @@ for epochs in range(total_epochs):
 
     total_f1 = 0
     total_samples = 0
-    total_mse = 0
+    total_mae = 0
 
     with torch.no_grad():
         target_model.eval()
@@ -266,15 +266,16 @@ for epochs in range(total_epochs):
             else:
                 loss = calc_loss(output, labels)
 
-            loss_fn = torch.nn.MSELoss(reduction='elementwise_mean')
+            loss_fn = torch.nn.L1Loss()
             loss2 = loss_fn(output2,labels2)
-            total_mse += loss2.item() * preds_arr.shape[0] / torch.pow(labels2, 2).mean(dim=1).sum() # Get total for batch
 
             # answers = labels.cpu().numpy() #obtain a numpy version of answers.
 
             preds = output > 0.5
 
             preds_arr = preds.cpu().numpy()
+            total_mae += torch.mean(torch.abs(output2 - labels2) / torch.sum(labels2)).cpu().numpy() # Get total for batch
+            print(torch.mean(torch.abs(output2 - labels2) / torch.sum(labels2)).cpu().numpy())
 
             labels_arr = labels.cpu().numpy()
             total_samples += preds_arr.shape[0]
@@ -285,14 +286,14 @@ for epochs in range(total_epochs):
             # storage.data_entry(answers,loss,epochs,output)
             # again, store losses
             time_taken = time.time() - start
-            print("Validation epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, calorie_loss: {calorie_loss:.5f}, F1: {f1}, MSE: {mse}, time taken: {time_taken:.3f}s".format(
+            print("Validation epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, calorie_loss: {calorie_loss:.5f}, F1: {f1}, Normalized MAE: {mae}, time taken: {time_taken:.3f}s".format(
                 epochs=epochs,
                 i=i,
                 num_batches=num_val_batches,
                 loss=loss.item(),
                 calorie_loss=loss2.item(),
                 f1=total_f1 / total_samples,
-                mse=total_mse / total_samples,
+                mae=total_mae / total_samples,
                 time_taken=time_taken
             ), flush=True)
 
@@ -333,7 +334,7 @@ target_model.load_state_dict(saved_state_dict, strict=False)
 correct =0
 target_model.eval()
 total_f1 = 0
-total_mse = 0
+total_mae = 0
 total_samples = 0
 
 with torch.no_grad():
@@ -354,12 +355,13 @@ with torch.no_grad():
         else:
             loss = calc_loss(output, labels)
 
-        loss_fn = torch.nn.MSELoss(reduction='elementwise_mean')
+        loss_fn = torch.nn.L1Loss()
         loss2 = loss_fn(output2,labels2)
-        total_mse += loss2.item() * preds_arr.shape[0] / torch.pow(labels2, 2).mean(dim=1).sum() # Get total for batch
 
         preds = (output > 0.5)
         preds_arr = preds.cpu().numpy()
+        total_mae += torch.mean(torch.abs(output2 - labels2) / torch.sum(labels2)).cpu().numpy() # Get total for batch
+        print(torch.mean(torch.abs(output2 - labels2) / torch.sum(labels2)).cpu().numpy())
 
         labels_arr = labels.cpu().numpy()
         total_samples += preds_arr.shape[0]
@@ -368,14 +370,14 @@ with torch.no_grad():
         # test_result.data_entry(answers,loss,epochs,output)
         time_taken = time.time() - start
 
-        print("Test epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, calorie_loss: {calorie_loss:.5f}, F1: {f1}, MSE: {mse}, time taken: {time_taken:.3f}s".format(
+        print("Test epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, calorie_loss: {calorie_loss:.5f}, F1: {f1}, Normalized MAE: {mae}, time taken: {time_taken:.3f}s".format(
             epochs=epochs,
             i=i,
             num_batches=num_test_batches,
             loss=loss.item(),
             calorie_loss=loss2.item(),
             f1=total_f1 / total_samples,
-            mse=total_mse / total_samples,
+            mae=total_mae / total_samples,
             time_taken=time_taken
         ), flush=True)
 
