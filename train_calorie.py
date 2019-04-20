@@ -175,12 +175,14 @@ test_result = result_storage(True,batch_size,num_classes,num_batches)
 ###########################################################
 
 best_f1 = 0
+best_mae = 0
 stagnating_epochs = 0 # Incremented when validation F1 score does not increase
 
 for epochs in range(total_epochs):
     epoch_start = time.time()
     target_model.train()
     total_f1 = 0
+    total_mae = 0
     total_samples = 0
 
     for i, (input, target) in enumerate(train_loader):
@@ -210,6 +212,9 @@ for epochs in range(total_epochs):
         preds_arr = preds.cpu().numpy()
         total_samples += preds_arr.shape[0]
 
+        output2_arr = output2.detach().cpu().numpy()
+        target2_arr = target2.detach().cpu().numpy()
+        total_mae += np.sum(np.sum(np.abs(output2_arr - target2_arr) / np.maximum(target2_arr, 1), axis=1) / np.maximum(np.sum(target2_arr > 0, axis=1), 1)) # Get total for batch
         labels_arr = labels.cpu().numpy()
         for j in range(preds_arr.shape[0]):
             total_f1 += f1_score(labels_arr[j,:], preds_arr[j,:], average='macro')
@@ -228,7 +233,7 @@ for epochs in range(total_epochs):
         combined_loss.backward()
         optimizer.step()
         time_taken = time.time() - start
-        print("Epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, loss_calorie: {loss2:.5f}, num_nonzero: {num_nonzero}, F1: {f1:.5f} lr: {lr:.5f} time taken: {time_taken:.3f}s".format(
+        print("Epoch {epochs}, batch {i} / {num_batches}, loss: {loss:.5f}, loss_calorie: {loss2:.5f}, num_nonzero: {num_nonzero}, F1: {f1:.5f}, normalized MAE: {mae:.5f}, lr: {lr:.5f} time taken: {time_taken:.3f}s".format(
                 epochs=epochs,
                 i=i,
                 num_batches=num_batches,
@@ -236,6 +241,7 @@ for epochs in range(total_epochs):
                 loss2=loss2.item(),
                 num_nonzero=num_nonzero,
                 f1=total_f1 / total_samples,
+                mae=total_mae / total_samples,
                 lr=scheduler.get_lr()[0],
                 time_taken=time_taken
             ), flush=True)
@@ -274,8 +280,9 @@ for epochs in range(total_epochs):
             preds = output > 0.5
 
             preds_arr = preds.cpu().numpy()
-            total_mae += torch.mean(torch.abs(output2 - labels2) / torch.sum(labels2)).cpu().numpy() # Get total for batch
-            print(torch.mean(torch.abs(output2 - labels2) / torch.sum(labels2)).cpu().numpy())
+            output2_arr = output2.detach().cpu().numpy()
+            target2_arr = target2.detach().cpu().numpy()
+            total_mae += np.sum(np.sum(np.abs(output2_arr - target2_arr) / np.maximum(target2_arr, 1), axis=1) / np.maximum(np.sum(target2_arr > 0, axis=1), 1)) # Get total for batch
 
             labels_arr = labels.cpu().numpy()
             total_samples += preds_arr.shape[0]
@@ -296,12 +303,13 @@ for epochs in range(total_epochs):
                 mae=total_mae / total_samples,
                 time_taken=time_taken
             ), flush=True)
-
             #############################################################################################                
             # calculate accuracy
         average_f1 = total_f1 / total_samples
+        average_mae = total_mae / total_samples
         print("=" * 20)
         print(f"Validation F1 score for this epoch: {average_f1}")
+        print(f"Validation MAE for this epoch: {average_mae}")
         print(f"Time taken: {time.time() - val_start}s")
         # print("Validation Accuracy for this epoch")
         # storage.accuracy_calculation_epoch(epochs) #calculate accuracies.
@@ -310,6 +318,8 @@ for epochs in range(total_epochs):
         #     print("Threshold of {} :  {}".format(threshold_value,latest[threshold_value]))
 
         # Save best performing model
+        if average_mae > best_mae:
+            best_mae = average_mae
         if average_f1 > best_f1:
             print("New best model!")
             best_f1 = average_f1
@@ -360,8 +370,9 @@ with torch.no_grad():
 
         preds = (output > 0.5)
         preds_arr = preds.cpu().numpy()
-        total_mae += torch.mean(torch.abs(output2 - labels2) / torch.sum(labels2)).cpu().numpy() # Get total for batch
-        print(torch.mean(torch.abs(output2 - labels2) / torch.sum(labels2)).cpu().numpy())
+        output2_arr = output2.detach().cpu().numpy()
+        target2_arr = target2.detach().cpu().numpy()
+        total_mae += np.sum(np.sum(np.abs(output2_arr - target2_arr) / np.maximum(target2_arr, 1), axis=1) / np.sum(target2_arr > 0, axis=1)) # Get total for batch
 
         labels_arr = labels.cpu().numpy()
         total_samples += preds_arr.shape[0]
@@ -390,9 +401,12 @@ with torch.no_grad():
     #     print("Threshold of {} :  {}".format(threshold_value,latest[threshold_value]))
     ############################################################
     average_f1 = total_f1 / total_samples
+    average_mae = total_mae / total_samples
     print("=" * 20)
     print(f"Best validation F1 score: {best_f1}")
+    print(f"Best validation MAE score: {best_mae}")
     print(f"Test F1 score: {average_f1}")
+    print(f"Test MAE score: {average_mae}")
     print(f"Time taken: {time.time() - test_start}s")
 
 print("Done")
