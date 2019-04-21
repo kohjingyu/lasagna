@@ -1,5 +1,10 @@
 # Lasagna
-In this work, we propose the use of food image and recipe data to assist in the estimation of calorie counts. With large amounts of data containing food photographs and their ingredients, we aim to learn the relationships between the features in these photographs and the ingredients present and provide an estimate on the number of calories contributed by each ingredient. We propose the use of a convolutional neural network (CNN) as a feature detector. The feature maps are then processed in two branches for classification and regression respectively. We also design a weighted loss function to account for the label sparsity that is a inherent problem in food datasets, given the massive amount of possible ingredients in photographs of food.
+In this work, we propose the use of food image and recipe data to assist in the estimation of calorie counts. With large amounts of data containing food photographs and their ingredients, we aim to learn the relationships between the features in these photographs and the ingredients present and provide an estimate on the number of calories contributed by each ingredient.
+
+## Model Architecture
+We propose the use of a convolutional neural network (CNN) as a feature detector. The feature maps are then processed in two branches for classification and regression respectively. We also design a weighted loss function to account for the label sparsity that is a inherent problem in food datasets, given the massive amount of possible ingredients in photographs of food.
+
+![Our proposed architecture.](images/architecture.png)
 
 ## Installation
 We run all experiments on Python 3.7.1. To install the necessary modules for running our code, run
