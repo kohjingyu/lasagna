@@ -18,7 +18,6 @@ All files can be downloaded from the [im2recipe site](http://im2recipe.csail.mit
 ```
 lasagna/
     ...
-    
     data/ # Downloaded from im2recipe
         lmdbs/
             train_keys.pkl
