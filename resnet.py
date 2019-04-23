@@ -178,7 +178,7 @@ class ResNet(nn.Module):
         output = self.fc(x)
         output2 = self.fc_regression(x)
         # Performing masking
-        zeros = torch.zeros(output2.size()).cuda()
+        zeros = torch.zeros(output2.size()) #.cuda()
         output2 = torch.where(output > 0.5, output2, zeros)
         output2 = torch.pow(output2, 2) # Element-wise square
         assert(torch.all(torch.nonzero(output2) == torch.nonzero(output > 0.5)))

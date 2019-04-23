@@ -1,23 +1,23 @@
 import numpy as np
 import torch
 
-def get_ingredient_mapping():
-    ingredient_mapping = np.load("data/ingredient_mapping.npy")
+def get_ingredient_mapping(root_dir="./"):
+    ingredient_mapping = np.load(root_dir + "data/ingredient_mapping.npy")
 
     return ingredient_mapping
 
-def get_class_weights():
-    class_weights = np.load("data/class_weights.npy")
+def get_class_weights(root_dir="./"):
+    class_weights = np.load(root_dir + "data/class_weights.npy")
     class_weights /= np.min(class_weights)
 
     return class_weights
 
-def get_class_mapping():
+def get_class_mapping(root_dir="./"):
     """
     Returns the new class mapping by filtering out unused (or long tailed) classes
     """
 
-    label_counts = np.load("data/label_count.npy")
+    label_counts = np.load(root_dir + "data/label_count.npy")
     label_counts[1] = 1 # Ignore the rubbish label
 #    top_k = 1500 # Only use top k labels
 

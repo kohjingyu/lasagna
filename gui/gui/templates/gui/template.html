@@ -1,0 +1,157 @@
+{% block content %}
+
+<html>
+<head>
+<title>Lasagna</title>
+
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+</head>
+<link href="https://fonts.googleapis.com/css?family=Raleway:400,700" rel="stylesheet">
+
+<style>
+body {
+    background-color: #FFE6D8;
+    font-family: 'Raleway', sans-serif;
+}
+
+h1 {
+    font-weight: 700;
+    font-size: 64px;
+    color: #542715;
+}
+
+a:hover {
+    text-decoration: none;
+}
+
+h5 {
+    font-weight: 700;
+}
+
+.btn {
+    color: #FFFFFF;
+    border: 1px solid #48A58E !important;
+    background-color: #6CB6A4 !important;
+    font-family: 'Raleway', sans-serif;
+    font-weight: 700 !important;
+    padding: 8px 16px;
+}
+
+.inputfile {
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: -1;
+}
+
+.inputfile + label {
+    font-family: 'Raleway', sans-serif;
+
+    color: #FFFFFF;
+    background-color: #E46D39;
+    border: 1px solid #D36434;
+
+    /*font-size: 1.25em;*/
+    font-weight: 700;
+    padding: 16px;
+    border-radius: 8px;
+    display: inline-block;
+    color: white;
+    cursor: pointer; /* "hand" cursor */
+}
+
+.inputfile + label span {
+    padding: 0 6px;
+}
+
+.inputfile, path {
+    fill: #FFF;
+    padding-right: 32px;
+}
+
+.inputfile:focus + label {
+    outline: 1px dotted #FFF;
+}
+.inputfile + label * {
+    pointer-events: none;
+}
+</style>
+
+<body>
+    <script>
+    // This code is taken from https://tympanus.net/codrops/2015/09/15/styling-customizing-file-inputs-smart-way/
+    window.onload = function(){
+        var inputs = document.querySelectorAll( '.inputfile' );
+        Array.prototype.forEach.call( inputs, function( input )
+        {
+            var label = input.nextElementSibling,
+            labelVal = label.innerHTML;
+
+            input.addEventListener('change', function( e )
+            {
+                var fileName = e.target.value.split( '\\' ).pop();
+
+                if( fileName ) {
+                    label.querySelector('span').innerHTML = fileName;
+                    var submit = document.getElementById("submit-btn");
+                    submit.disabled = false;
+                }
+                else
+                    label.innerHTML = labelVal;
+            });
+
+            // Firefox bug fix
+            input.addEventListener('focus', function(){ input.classList.add( 'has-focus' ); });
+            input.addEventListener('blur', function(){ input.classList.remove( 'has-focus' ); });
+        });
+    }
+    </script>
+
+    <div class="container" align="center">
+    <br/>
+    <a href="/"><h1>Lasagna</h1></a>
+    <hr/>
+
+    <form action="/" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="img_path" id="img_path" class="inputfile" />
+        <label for="img_path">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="23" viewBox="0 0 20 23"><path d="M10 0l-5.2 4.9h3.3v5.1h3.8v-5.1h3.3l-5.2-4.9zm9.3 11.5l-3.2-2.1h-2l3.4 2.6h-3.5c-.1 0-.2.1-.2.1l-.8 2.3h-6l-.8-2.2c-.1-.1-.1-.2-.2-.2h-3.6l3.4-2.6h-2l-3.2 2.1c-.4.3-.7 1-.6 1.5l.6 3.1c.1.5.7.9 1.2.9h16.3c.6 0 1.1-.4 1.3-.9l.6-3.1c.1-.5-.2-1.2-.7-1.5z"></path></svg>
+        <span>Upload an image</span>
+        </label>
+        <br/>
+        <input class="btn btn-primary" id="submit-btn" type="submit" title="Hello" disabled />
+    </form>
+
+    {% if predicted_ingredients %}
+    <br/>
+    <div class="card mb-3">
+    <div class="row no-gutters">
+    <div class="col-md-6">
+    <img src="{{ image_url }}" class="card-img" alt="...">
+    </div>
+    <div class="col-md-6">
+      <div class="card-body">
+        <h5 class="card-title">Ingredients</h5>
+        <hr/>
+        <p class="card-text">
+            {% for ingredient in predicted_ingredients %}
+            <p style="margin:0">{{ ingredient.0 }}</p> <!--  ({{ ingredient.1 }} grams)  -->
+            {% endfor %}
+        </p>
+      </div>
+    </div>
+    </div>
+    </div>
+    {% endif %}
+</body>
+
+</html>
+
+
+{% endblock %}
